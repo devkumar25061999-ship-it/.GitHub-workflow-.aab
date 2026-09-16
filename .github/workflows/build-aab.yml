@@ -24,8 +24,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 22
 
       - name: Setup Java 17 (Official Android Build SDK)
         uses: actions/setup-java@v4
@@ -35,15 +34,16 @@ jobs:
 
       - name: Install Project Dependencies
         run: |
-          npm ci || npm install
-          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest @capacitor-community/admob@latest
+          npm install --legacy-peer-deps
+          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest @capacitor-community/admob@latest --legacy-peer-deps
 
       - name: Build Pure Web Assets (Vite)
         run: npm run build
 
       - name: Initialize Android Native Project
         run: |
-          npx cap add android
+          npx cap add android || true
+          npx cap sync android
 
       - name: Configure Android Manifest & Permissions (AdMob & Internet)
         run: |
