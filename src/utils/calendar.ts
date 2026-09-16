@@ -1,0 +1,140 @@
+import { AttendanceDatabase, MonthlySummary } from '../types';
+
+export const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+export const WEEKDAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+export function formatDateString(year: number, month: number, day: number): string {
+  const m = String(month + 1).padStart(2, '0');
+  const d = String(day).padStart(2, '0');
+  return `${year}-${m}-${d}`;
+}
+
+export function parseDateString(dateStr: string): { year: number; month: number; day: number } {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return { year: y, month: m - 1, day: d };
+}
+
+export function getDaysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+export function getFirstDayOfWeek(year: number, month: number): number {
+  return new Date(year, month, 1).getDay(); // 0 = Sunday, 1 = Monday, ...
+}
+
+export interface CalendarCell {
+  id: string;
+  type: 'empty' | 'day';
+  dayNumber?: number;
+  dateString?: string;
+  isSunday?: boolean;
+  isSaturday?: boolean;
+  isWeekend?: boolean;
+}
+
+export function getCalendarGrid(year: number, month: number): CalendarCell[] {
+  const firstDay = getFirstDayOfWeek(year, month);
+  const totalDays = getDaysInMonth(year, month);
+  const cells: CalendarCell[] = [];
+
+  // Empty cells before day 1
+  for (let i = 0; i < firstDay; i++) {
+    cells.push({
+      id: `pre-${i}`,
+      type: 'empty',
+    });
+  }
+
+  // Actual days
+  for (let day = 1; day <= totalDays; day++) {
+    const dayOfWeek = (firstDay + day - 1) % 7;
+    const isSunday = dayOfWeek === 0;
+    const isSaturday = dayOfWeek === 6;
+    const isWeekend = isSunday || isSaturday;
+    const dateString = formatDateString(year, month, day);
+
+    cells.push({
+      id: dateString,
+      type: 'day',
+      dayNumber: day,
+      dateString,
+      isSunday,
+      isSaturday,
+      isWeekend,
+    });
+  }
+
+  // Trailing empty cells to fill the last row if needed (multiple of 7)
+  const remainder = cells.length % 7;
+  if (remainder !== 0) {
+    const needed = 7 - remainder;
+    for (let i = 0; i < needed; i++) {
+      cells.push({
+        id: `post-${i}`,
+        type: 'empty',
+      });
+    }
+  }
+
+  return cells;
+}
+
+export function calculateMonthlySummary(db: AttendanceDatabase, year: number, month: number): MonthlySummary {
+  const totalDays = getDaysInMonth(year, month);
+  let workDays = 0;
+  let overtimeHours = 0;
+  let vacationDays = 0;
+  let sickDays = 0;
+  let emergencyDays = 0;
+  let holidayDays = 0;
+  let daysWithOvertime = 0;
+  let totalRecordedDays = 0;
+
+  for (let day = 1; day <= totalDays; day++) {
+    const dateKey = formatDateString(year, month, day);
+    const record = db[dateKey];
+    if (record) {
+      if (record.status && record.status !== 'none') {
+        totalRecordedDays++;
+      }
+      if (record.status === 'work') {
+        workDays++;
+      } else if (record.status === 'vacation') {
+        vacationDays++;
+      } else if (record.status === 'sick') {
+        sickDays++;
+      } else if (record.status === 'emergency') {
+        emergencyDays++;
+      } else if (record.status === 'holiday') {
+        holidayDays++;
+      }
+
+      if (record.overtimeHours && record.overtimeHours > 0) {
+        overtimeHours += record.overtimeHours;
+        daysWithOvertime++;
+      }
+    }
+  }
+
+  // Prevent floating point inaccuracies (e.g. 0.1 + 0.2)
+  overtimeHours = Math.round(overtimeHours * 10) / 10;
+
+  return {
+    year,
+    month,
+    monthName: MONTH_NAMES[month],
+    workDays,
+    overtimeHours,
+    vacationDays,
+    sickDays,
+    emergencyDays,
+    holidayDays,
+    totalDays,
+    daysWithOvertime,
+    totalRecordedDays,
+  };
+}

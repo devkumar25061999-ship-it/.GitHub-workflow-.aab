@@ -1,0 +1,6 @@
+{
+  "appId": "com.attendanceplus.app",
+  "appName": "Attendance Plus",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

@@ -1,0 +1,74 @@
+name: Build Clean Android AAB (Google Play Bundle)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      admob_app_id:
+        description: 'Google AdMob App ID (optional, leave blank for official test ads)'
+        required: false
+        default: 'ca-app-pub-3940256099942544~3347511713'
+
+jobs:
+  build-aab:
+    name: Generate Production AAB
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Java 17 (Official Android Build SDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Install Project Dependencies
+        run: |
+          npm ci || npm install
+          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest @capacitor-community/admob@latest
+
+      - name: Build Pure Web Assets (Vite)
+        run: npm run build
+
+      - name: Initialize Android Native Project
+        run: |
+          npx cap add android
+
+      - name: Configure Android Manifest & Permissions (AdMob & Internet)
+        run: |
+          ADMOB_ID="${{ github.event.inputs.admob_app_id }}"
+          if [ -z "$ADMOB_ID" ]; then
+            ADMOB_ID="ca-app-pub-3940256099942544~3347511713"
+          fi
+          
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          
+          # Add Internet & AD_ID permissions if not already present
+          sed -i '/<\/manifest>/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />' $MANIFEST
+          
+          # Inject official AdMob Application ID meta-data tag into <application>
+          sed -i "/<\/application>/i \        <meta-data android:name=\"com.google.android.gms.ads.APPLICATION_ID\" android:value=\"$ADMOB_ID\" />" $MANIFEST
+
+      - name: Build Android App Bundle (.aab) with Gradle
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew bundleRelease --stacktrace
+
+      - name: Upload Clean AAB Artifact (Direct Phone Download)
+        uses: actions/upload-artifact@v4
+        with:
+          name: AttendancePlus-PlayStore-Release-AAB
+          path: android/app/build/outputs/bundle/release/*.aab
+          retention-days: 14
