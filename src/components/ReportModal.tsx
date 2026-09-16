@@ -52,13 +52,14 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   };
 
   // Salary calculations
-  const baseSalary = summary.workDays * (settings.dailyWage || 0);
+  const effectiveDays = summary.effectiveWorkDays ?? (summary.workDays + (summary.halfDays || 0) * 0.5);
+  const baseSalary = effectiveDays * (settings.dailyWage || 0);
   const overtimeSalary = summary.overtimeHours * (settings.hourlyOvertimeRate || 0);
   const totalEstimatedEarnings = baseSalary + overtimeSalary;
 
   // Attendance rate (work days vs 30/31 days or working days)
   const attendancePercentage = summary.totalDays > 0
-    ? Math.round((summary.workDays / (summary.totalDays - 8)) * 100) // approx excluding weekends
+    ? Math.round((effectiveDays / (summary.totalDays - 8)) * 100) // approx excluding weekends
     : 0;
   const boundedRate = Math.min(100, Math.max(0, attendancePercentage));
 
@@ -133,6 +134,17 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                   <span className="font-bold text-blue-700">{summary.workDays} Days</span>
                 </div>
 
+                {summary.halfDays > 0 && (
+                  <div className="flex items-center justify-between py-1 border-b border-gray-200/70">
+                    <span className="flex items-center gap-2">
+                      <span>🌗</span> Half Duty:
+                    </span>
+                    <span className="font-bold text-indigo-700">
+                      {summary.halfDays} Days ({summary.halfDays * 0.5} Work Days)
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between py-1 border-b border-gray-200/70">
                   <span className="flex items-center gap-2">
                     <span>🏖️</span> Vacation:
@@ -172,7 +184,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                     </span>
                   </div>
                   <span className="text-xs bg-emerald-200/80 text-emerald-900 px-2 py-1 rounded-md font-bold">
-                    {summary.workDays}d + {summary.overtimeHours}h OT
+                    {effectiveDays}d Work + {summary.overtimeHours}h OT
                   </span>
                 </div>
               )}
@@ -208,7 +220,10 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
                 <div className="text-xs space-y-1.5 pt-1 text-gray-700">
                   <div className="flex justify-between">
-                    <span>Base Work Pay ({summary.workDays} days × {settings.currency}{settings.dailyWage}):</span>
+                    <span>
+                      Base Work Pay ({effectiveDays} days × {settings.currency}{settings.dailyWage})
+                      {summary.halfDays > 0 ? ` [${summary.workDays} Full + ${summary.halfDays} Half]` : ''}:
+                    </span>
                     <span className="font-semibold">{settings.currency} {baseSalary.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
@@ -241,6 +256,21 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                       />
                     </div>
                   </div>
+
+                  {summary.halfDays > 0 && (
+                    <div>
+                      <div className="flex justify-between mb-0.5">
+                        <span className="font-semibold text-indigo-700">🌗 Half Duty ({summary.halfDays} days)</span>
+                        <span>{Math.round((summary.halfDays / summary.totalDays) * 100)}%</span>
+                      </div>
+                      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-indigo-600 rounded-full"
+                          style={{ width: `${(summary.halfDays / summary.totalDays) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <div className="flex justify-between mb-0.5">

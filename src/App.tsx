@@ -126,6 +126,15 @@ export default function App() {
 
   // Cell tap interaction
   const handleCellClick = (dateStr: string) => {
+    // If clicking a date from previous/next month, smoothly switch to that month
+    const [yStr, mStr] = dateStr.split('-');
+    const targetYear = Number(yStr);
+    const targetMonth = Number(mStr) - 1;
+    if (targetYear !== currentYear || targetMonth !== currentMonth) {
+      setCurrentYear(targetYear);
+      setCurrentMonth(targetMonth);
+    }
+
     if (!activeTool) {
       // If no tool selected, open day details
       setDetailModalDate(dateStr);
@@ -179,6 +188,13 @@ export default function App() {
 
   // Cell long-press or secondary click -> opens DayDetailModal
   const handleCellLongPress = (dateStr: string) => {
+    const [yStr, mStr] = dateStr.split('-');
+    const targetYear = Number(yStr);
+    const targetMonth = Number(mStr) - 1;
+    if (targetYear !== currentYear || targetMonth !== currentMonth) {
+      setCurrentYear(targetYear);
+      setCurrentMonth(targetMonth);
+    }
     setDetailModalDate(dateStr);
   };
 
@@ -329,6 +345,8 @@ export default function App() {
         <MonthNavigator
           monthName={MONTH_NAMES[currentMonth]}
           workDays={summary.workDays}
+          halfDays={summary.halfDays}
+          effectiveWorkDays={summary.effectiveWorkDays}
           overtimeHours={summary.overtimeHours}
           onPrevMonth={handlePrevMonth}
           onNextMonth={handleNextMonth}

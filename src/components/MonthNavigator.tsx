@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 interface MonthNavigatorProps {
   monthName: string;
   workDays: number;
+  halfDays?: number;
+  effectiveWorkDays?: number;
   overtimeHours: number;
   onPrevMonth: () => void;
   onNextMonth: () => void;
@@ -12,10 +14,14 @@ interface MonthNavigatorProps {
 export const MonthNavigator: React.FC<MonthNavigatorProps> = ({
   monthName,
   workDays,
+  halfDays = 0,
+  effectiveWorkDays,
   overtimeHours,
   onPrevMonth,
   onNextMonth,
 }) => {
+  const displayWorkDays = effectiveWorkDays ?? (workDays + halfDays * 0.5);
+
   return (
     <div id="month-navigation-section" className="w-full flex flex-col items-center gap-2.5 pt-3 pb-2 px-3">
       {/* Month Bar: Dark rounded container with circular arrows and golden month text */}
@@ -51,7 +57,12 @@ export const MonthNavigator: React.FC<MonthNavigatorProps> = ({
           className="bg-[#fef9c3] border border-amber-300/80 rounded-lg py-1.5 px-3 text-center shadow-xs flex items-center justify-center"
         >
           <span className="text-gray-900 font-bold text-sm sm:text-base">
-            Work: <span className="text-gray-950 font-black">{workDays} Days</span>
+            Work: <span className="text-gray-950 font-black">{displayWorkDays} Days</span>
+            {halfDays > 0 && (
+              <span className="text-[11px] text-indigo-700 font-bold ml-1">
+                ({halfDays} HD)
+              </span>
+            )}
           </span>
         </div>
 

@@ -86,8 +86,27 @@ export const DayDetailModal: React.FC<DayDetailModalProps> = ({
             <label className="text-xs font-bold text-gray-700 block mb-1.5 uppercase tracking-wide">
               Attendance Status
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {CATEGORIES.map((cat) => (
+            <div className="grid grid-cols-4 gap-1.5 mb-1.5">
+              {CATEGORIES.slice(0, 4).map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setStatus(cat.id)}
+                  className={`py-2 px-1 rounded-lg text-[11px] sm:text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 transition ${
+                    cat.bgColor
+                  } ${cat.textColor} ${
+                    status === cat.id
+                      ? 'border-2 border-black ring-2 ring-black/20 shadow-xs'
+                      : 'border border-gray-300/80 hover:brightness-95'
+                  }`}
+                >
+                  <span>{cat.emoji}</span>
+                  <span className="truncate">{cat.name}</span>
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {CATEGORIES.slice(4).map((cat) => (
                 <button
                   key={cat.id}
                   type="button"

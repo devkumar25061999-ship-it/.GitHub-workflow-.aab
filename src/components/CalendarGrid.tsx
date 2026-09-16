@@ -39,17 +39,8 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 
         {/* 7-Column Calendar Grid */}
         <div className="grid grid-cols-7">
-          {cells.map((cell, idx) => {
-            if (cell.type === 'empty') {
-              return (
-                <div
-                  key={cell.id}
-                  className="aspect-square sm:aspect-4/3 bg-[#fef9c3] border-b border-r border-gray-400/60 last:border-r-0"
-                />
-              );
-            }
-
-            const dateStr = cell.dateString!;
+          {cells.map((cell) => {
+            const dateStr = cell.dateString;
             const record = records[dateStr];
             const status: AttendanceStatus = record?.status || 'none';
             const overtimeHours = record?.overtimeHours || 0;
@@ -57,7 +48,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
             const isWeekend = !!cell.isWeekend;
             const hasNotes = typeof record?.notes === 'string' && record.notes.trim().length > 0;
 
-            const { bgClass, textClass } = getCellVisuals(status, hasOvertime, isWeekend);
+            const { bgClass, textClass } = getCellVisuals(status, hasOvertime, isWeekend, cell.isOtherMonth);
 
             return (
               <button
@@ -70,12 +61,19 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   onCellLongPress(dateStr);
                 }}
                 className={`aspect-square sm:aspect-4/3 flex flex-col items-center justify-center p-0.5 border-b border-r border-gray-500/70 transition-colors relative select-none cursor-pointer focus:outline-none active:brightness-90 ${bgClass}`}
-                title={`${dateStr}: ${status.toUpperCase()} ${hasOvertime ? `(${overtimeHours}h OT)` : ''}${hasNotes ? ` • Note: ${record.notes}` : ''}`}
+                title={`${dateStr}: ${status.toUpperCase()} ${hasOvertime ? `(${overtimeHours}h OT)` : ''}${hasNotes ? ` • Note: ${record?.notes}` : ''}`}
               >
                 {/* Date Number */}
                 <span className={`text-base sm:text-lg leading-none ${textClass}`}>
                   {cell.dayNumber}
                 </span>
+
+                {/* Half Duty badge */}
+                {status === 'halfday' && (
+                  <div className="mt-0.5 px-1 py-0.2 bg-white text-indigo-950 font-black text-[9px] sm:text-[10px] rounded-xs shadow-xs leading-tight tracking-tight uppercase">
+                    ½ Day
+                  </div>
+                )}
 
                 {/* Overtime badge matching screenshot (e.g. 30m, 1h, 1.5h, 8h in dark pill) */}
                 {hasOvertime && (
@@ -89,7 +87,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   <span
                     id={`note-indicator-${dateStr}`}
                     className="absolute top-1 right-1 p-0.5 rounded-full bg-amber-400 text-amber-950 shadow-xs ring-1 ring-amber-600/30 flex items-center justify-center"
-                    title={`Note: ${record.notes}`}
+                    title={`Note: ${record?.notes}`}
                   >
                     <FileText className="w-2.5 h-2.5 stroke-[2.5]" />
                   </span>

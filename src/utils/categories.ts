@@ -11,6 +11,33 @@ export const CATEGORIES: CategoryDef[] = [
     activeRing: 'ring-3 ring-blue-700 shadow-md',
   },
   {
+    id: 'halfday',
+    name: 'Half Duty',
+    emoji: '🌗',
+    bgColor: 'bg-[#c7d2fe] hover:bg-[#a5b4fc]',
+    textColor: 'text-indigo-950',
+    borderColor: 'border-indigo-400',
+    activeRing: 'ring-3 ring-indigo-700 shadow-md',
+  },
+  {
+    id: 'overtime',
+    name: 'Overtime',
+    emoji: '⏱️',
+    bgColor: 'bg-[#bbf7d0] hover:bg-[#86efac]',
+    textColor: 'text-gray-900',
+    borderColor: 'border-emerald-400',
+    activeRing: 'ring-3 ring-emerald-700 shadow-md',
+  },
+  {
+    id: 'holiday',
+    name: 'Holiday',
+    emoji: '🎉',
+    bgColor: 'bg-[#fed7aa] hover:bg-[#fdba74]',
+    textColor: 'text-gray-900',
+    borderColor: 'border-orange-400',
+    activeRing: 'ring-3 ring-orange-700 shadow-md',
+  },
+  {
     id: 'vacation',
     name: 'Vacation',
     emoji: '🏖️',
@@ -37,38 +64,33 @@ export const CATEGORIES: CategoryDef[] = [
     borderColor: 'border-amber-400',
     activeRing: 'ring-3 ring-amber-700 shadow-md',
   },
-  {
-    id: 'holiday',
-    name: 'Holiday',
-    emoji: '🎉',
-    bgColor: 'bg-[#fed7aa] hover:bg-[#fdba74]',
-    textColor: 'text-gray-900',
-    borderColor: 'border-orange-400',
-    activeRing: 'ring-3 ring-orange-700 shadow-md',
-  },
-  {
-    id: 'overtime',
-    name: 'Overtime',
-    emoji: '⏱️',
-    bgColor: 'bg-[#bbf7d0] hover:bg-[#86efac]',
-    textColor: 'text-gray-900',
-    borderColor: 'border-emerald-400',
-    activeRing: 'ring-3 ring-emerald-700 shadow-md',
-  },
 ];
 
 export function getCategoryDef(status: AttendanceStatus): CategoryDef | undefined {
   return CATEGORIES.find((c) => c.id === status);
 }
 
-export function getCellVisuals(status: AttendanceStatus, hasOvertime: boolean, isWeekend: boolean): {
+export function getCellVisuals(
+  status: AttendanceStatus,
+  hasOvertime: boolean,
+  isWeekend: boolean,
+  isOtherMonth?: boolean
+): {
   bgClass: string;
   textClass: string;
 } {
-  // If overtime is present and no other prominent status or status is work/overtime
+  // If halfday is selected, give it distinct prominent styling
+  if (status === 'halfday') {
+    return {
+      bgClass: isOtherMonth ? 'bg-[#6366f1]/60' : 'bg-[#6366f1]',
+      textClass: 'text-white font-bold',
+    };
+  }
+
+  // If overtime is present
   if (hasOvertime) {
     return {
-      bgClass: 'bg-[#4ade80]',
+      bgClass: isOtherMonth ? 'bg-[#4ade80]/60' : 'bg-[#4ade80]',
       textClass: 'text-gray-900 font-bold',
     };
   }
@@ -76,30 +98,36 @@ export function getCellVisuals(status: AttendanceStatus, hasOvertime: boolean, i
   switch (status) {
     case 'work':
       return {
-        bgClass: 'bg-[#2563eb]',
+        bgClass: isOtherMonth ? 'bg-[#2563eb]/60' : 'bg-[#2563eb]',
         textClass: 'text-white font-bold',
       };
     case 'vacation':
       return {
-        bgClass: 'bg-[#2dd4bf]',
+        bgClass: isOtherMonth ? 'bg-[#2dd4bf]/60' : 'bg-[#2dd4bf]',
         textClass: 'text-gray-950 font-bold',
       };
     case 'sick':
       return {
-        bgClass: 'bg-[#f87171]',
+        bgClass: isOtherMonth ? 'bg-[#f87171]/60' : 'bg-[#f87171]',
         textClass: 'text-white font-bold',
       };
     case 'emergency':
       return {
-        bgClass: 'bg-[#facc15]',
+        bgClass: isOtherMonth ? 'bg-[#facc15]/60' : 'bg-[#facc15]',
         textClass: 'text-gray-950 font-bold',
       };
     case 'holiday':
       return {
-        bgClass: 'bg-[#fb923c]',
+        bgClass: isOtherMonth ? 'bg-[#fb923c]/60' : 'bg-[#fb923c]',
         textClass: 'text-gray-950 font-bold',
       };
     default:
+      if (isOtherMonth) {
+        return {
+          bgClass: 'bg-[#fefce8]/60 hover:bg-[#fef9c3]',
+          textClass: isWeekend ? 'text-rose-400 font-medium' : 'text-gray-400 font-medium',
+        };
+      }
       if (isWeekend) {
         return {
           bgClass: 'bg-[#dbeafe]/70',

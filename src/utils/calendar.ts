@@ -28,9 +28,13 @@ export function getFirstDayOfWeek(year: number, month: number): number {
 
 export interface CalendarCell {
   id: string;
-  type: 'empty' | 'day';
-  dayNumber?: number;
-  dateString?: string;
+  type: 'day';
+  dayNumber: number;
+  dateString: string;
+  year: number;
+  month: number;
+  isCurrentMonth: boolean;
+  isOtherMonth: boolean;
   isSunday?: boolean;
   isSaturday?: boolean;
   isWeekend?: boolean;
@@ -41,15 +45,36 @@ export function getCalendarGrid(year: number, month: number): CalendarCell[] {
   const totalDays = getDaysInMonth(year, month);
   const cells: CalendarCell[] = [];
 
-  // Empty cells before day 1
-  for (let i = 0; i < firstDay; i++) {
-    cells.push({
-      id: `pre-${i}`,
-      type: 'empty',
-    });
+  // Previous month filling (no blank holes!)
+  if (firstDay > 0) {
+    const prevMonth = month === 0 ? 11 : month - 1;
+    const prevYear = month === 0 ? year - 1 : year;
+    const prevDaysCount = getDaysInMonth(prevYear, prevMonth);
+    const startDay = prevDaysCount - firstDay + 1;
+
+    for (let p = 0; p < firstDay; p++) {
+      const dayNum = startDay + p;
+      const dateString = formatDateString(prevYear, prevMonth, dayNum);
+      const isSunday = p === 0;
+      const isSaturday = p === 6;
+
+      cells.push({
+        id: dateString,
+        type: 'day',
+        dayNumber: dayNum,
+        dateString,
+        year: prevYear,
+        month: prevMonth,
+        isCurrentMonth: false,
+        isOtherMonth: true,
+        isSunday,
+        isSaturday,
+        isWeekend: isSunday || isSaturday,
+      });
+    }
   }
 
-  // Actual days
+  // Current month days
   for (let day = 1; day <= totalDays; day++) {
     const dayOfWeek = (firstDay + day - 1) % 7;
     const isSunday = dayOfWeek === 0;
@@ -62,20 +87,40 @@ export function getCalendarGrid(year: number, month: number): CalendarCell[] {
       type: 'day',
       dayNumber: day,
       dateString,
+      year,
+      month,
+      isCurrentMonth: true,
+      isOtherMonth: false,
       isSunday,
       isSaturday,
       isWeekend,
     });
   }
 
-  // Trailing empty cells to fill the last row if needed (multiple of 7)
+  // Trailing days from next month to complete the week rows (no blank holes!)
   const remainder = cells.length % 7;
   if (remainder !== 0) {
     const needed = 7 - remainder;
-    for (let i = 0; i < needed; i++) {
+    const nextMonth = month === 11 ? 0 : month + 1;
+    const nextYear = month === 11 ? year + 1 : year;
+
+    for (let n = 1; n <= needed; n++) {
+      const isSunday = (cells.length) % 7 === 0;
+      const isSaturday = (cells.length) % 7 === 6;
+      const dateString = formatDateString(nextYear, nextMonth, n);
+
       cells.push({
-        id: `post-${i}`,
-        type: 'empty',
+        id: dateString,
+        type: 'day',
+        dayNumber: n,
+        dateString,
+        year: nextYear,
+        month: nextMonth,
+        isCurrentMonth: false,
+        isOtherMonth: true,
+        isSunday,
+        isSaturday,
+        isWeekend: isSunday || isSaturday,
       });
     }
   }
@@ -86,6 +131,7 @@ export function getCalendarGrid(year: number, month: number): CalendarCell[] {
 export function calculateMonthlySummary(db: AttendanceDatabase, year: number, month: number): MonthlySummary {
   const totalDays = getDaysInMonth(year, month);
   let workDays = 0;
+  let halfDays = 0;
   let overtimeHours = 0;
   let vacationDays = 0;
   let sickDays = 0;
@@ -103,6 +149,8 @@ export function calculateMonthlySummary(db: AttendanceDatabase, year: number, mo
       }
       if (record.status === 'work') {
         workDays++;
+      } else if (record.status === 'halfday') {
+        halfDays++;
       } else if (record.status === 'vacation') {
         vacationDays++;
       } else if (record.status === 'sick') {
@@ -122,12 +170,15 @@ export function calculateMonthlySummary(db: AttendanceDatabase, year: number, mo
 
   // Prevent floating point inaccuracies (e.g. 0.1 + 0.2)
   overtimeHours = Math.round(overtimeHours * 10) / 10;
+  const effectiveWorkDays = Math.round((workDays + halfDays * 0.5) * 10) / 10;
 
   return {
     year,
     month,
     monthName: MONTH_NAMES[month],
     workDays,
+    halfDays,
+    effectiveWorkDays,
     overtimeHours,
     vacationDays,
     sickDays,

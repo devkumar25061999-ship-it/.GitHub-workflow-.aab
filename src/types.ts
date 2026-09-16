@@ -1,4 +1,4 @@
-export type AttendanceStatus = 'work' | 'vacation' | 'sick' | 'emergency' | 'holiday' | 'overtime' | 'none';
+export type AttendanceStatus = 'work' | 'halfday' | 'vacation' | 'sick' | 'emergency' | 'holiday' | 'overtime' | 'none';
 
 export interface CategoryDef {
   id: AttendanceStatus;
@@ -25,6 +25,8 @@ export interface MonthlySummary {
   month: number; // 0-11
   monthName: string;
   workDays: number;
+  halfDays: number;
+  effectiveWorkDays: number;
   overtimeHours: number;
   vacationDays: number;
   sickDays: number;

@@ -5,20 +5,26 @@ export function generateMonthlyTextReport(
   summary: MonthlySummary,
   settings?: AppSettings
 ): string {
+  const effectiveWork = summary.effectiveWorkDays ?? (summary.workDays + (summary.halfDays || 0) * 0.5);
+
   let text = `📊 ${summary.monthName} ${summary.year} Report:\n\n`;
   text += `⏱️ Total Overtime: ${summary.overtimeHours} Hours\n`;
-  text += `💼 Work Days: ${summary.workDays} Days\n`;
+  text += `💼 Full Work Days: ${summary.workDays} Days\n`;
+  if (summary.halfDays > 0) {
+    text += `🌗 Half Duty: ${summary.halfDays} Days (${summary.halfDays * 0.5} Work Days)\n`;
+    text += `📈 Total Effective Work: ${effectiveWork} Days\n`;
+  }
   text += `🏖️ Vacation: ${summary.vacationDays} Days\n`;
   text += `💊 Sick: ${summary.sickDays} Days\n`;
   text += `🚨 Emergency: ${summary.emergencyDays} Days\n`;
   text += `🎉 Holiday: ${summary.holidayDays} Days\n`;
 
   if (settings && (settings.dailyWage > 0 || settings.hourlyOvertimeRate > 0)) {
-    const baseWage = summary.workDays * settings.dailyWage;
+    const baseWage = effectiveWork * settings.dailyWage;
     const otWage = summary.overtimeHours * settings.hourlyOvertimeRate;
     const totalWage = baseWage + otWage;
     text += `\n💰 Estimated Salary:\n`;
-    text += `- Base (${summary.workDays} days @ ${settings.currency}${settings.dailyWage}): ${settings.currency}${baseWage}\n`;
+    text += `- Base (${effectiveWork} work days @ ${settings.currency}${settings.dailyWage}): ${settings.currency}${baseWage}\n`;
     text += `- Overtime (${summary.overtimeHours} hrs @ ${settings.currency}${settings.hourlyOvertimeRate}): ${settings.currency}${otWage}\n`;
     text += `- Total Earnings: ${settings.currency}${totalWage}\n`;
   }
@@ -37,6 +43,7 @@ export function downloadMonthlyCSV(
 ): void {
   const totalDays = getDaysInMonth(year, month);
   const rows: string[][] = [];
+  const effectiveWork = summary.effectiveWorkDays ?? (summary.workDays + (summary.halfDays || 0) * 0.5);
 
   // Header meta
   rows.push(['Attendance Plus - Monthly Attendance Report']);
@@ -48,7 +55,11 @@ export function downloadMonthlyCSV(
 
   // Summary Table
   rows.push(['Summary Metric', 'Value']);
-  rows.push(['Total Work Days', `${summary.workDays} Days`]);
+  rows.push(['Full Work Days', `${summary.workDays} Days`]);
+  if (summary.halfDays > 0) {
+    rows.push(['Half Duty Days', `${summary.halfDays} Days (${summary.halfDays * 0.5} Work Days)`]);
+    rows.push(['Total Effective Work', `${effectiveWork} Days`]);
+  }
   rows.push(['Total Overtime', `${summary.overtimeHours} Hours`]);
   rows.push(['Vacation Days', `${summary.vacationDays} Days`]);
   rows.push(['Sick Days', `${summary.sickDays} Days`]);
@@ -56,7 +67,7 @@ export function downloadMonthlyCSV(
   rows.push(['Holiday Days', `${summary.holidayDays} Days`]);
   
   if (settings.dailyWage > 0 || settings.hourlyOvertimeRate > 0) {
-    const basePay = summary.workDays * settings.dailyWage;
+    const basePay = effectiveWork * settings.dailyWage;
     const otPay = summary.overtimeHours * settings.hourlyOvertimeRate;
     rows.push(['Base Pay', `${settings.currency} ${basePay}`]);
     rows.push(['Overtime Pay', `${settings.currency} ${otPay}`]);
