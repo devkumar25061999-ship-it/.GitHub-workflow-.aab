@@ -43,5 +43,9 @@ export interface AppSettings {
   employeeName: string;
   admobAppId?: string;
   admobBannerId?: string;
+  admobInterstitialId?: string;
+  admobAppOpenId?: string;
   admobTestMode?: boolean;
+  enableAppOpenAd?: boolean;
+  enableInterstitialOnReport?: boolean;
 }

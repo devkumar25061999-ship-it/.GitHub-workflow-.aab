@@ -66,9 +66,22 @@ jobs:
           chmod +x gradlew
           ./gradlew bundleRelease --stacktrace
 
+      - name: Sign AAB Bundle for Google Play Store
+        run: |
+          AAB_PATH=$(find android/app/build/outputs/bundle -name "*.aab" | head -n 1)
+          if [ -n "$AAB_PATH" ]; then
+            echo "Found AAB at $AAB_PATH. Signing with release keystore..."
+            keytool -genkeypair -v -keystore release.keystore -alias attendanceplus -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "attendance123" -keypass "attendance123" \
+              -dname "CN=Attendance Plus, OU=Mobile, O=Dev Kumar, L=Delhi, C=IN"
+            jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore release.keystore -storepass "attendance123" -keypass "attendance123" "$AAB_PATH" attendanceplus
+            echo "Successfully signed AAB!"
+          fi
+
       - name: Upload Clean AAB Artifact (Direct Phone Download)
         uses: actions/upload-artifact@v4
         with:
           name: AttendancePlus-PlayStore-Release-AAB
-          path: android/app/build/outputs/bundle/release/*.aab
+          path: |
+            android/app/build/outputs/bundle/**/*.aab
           retention-days: 14

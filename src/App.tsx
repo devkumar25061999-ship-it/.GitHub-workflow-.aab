@@ -28,6 +28,7 @@ import { SettingsAndSyncModal } from './components/SettingsAndSyncModal';
 import { OfflineBanner } from './components/OfflineBanner';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { AdMobBanner } from './components/AdMobBanner';
+import { AppOpenAdModal } from './components/AppOpenAdModal';
 
 export default function App() {
   // Initial state defaults to September 2026 matching user's uploaded screenshots
@@ -53,6 +54,17 @@ export default function App() {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState<boolean>(false);
   const [overtimeModalDate, setOvertimeModalDate] = useState<string | null>(null);
   const [detailModalDate, setDetailModalDate] = useState<string | null>(null);
+  const [isAppOpenAdActive, setIsAppOpenAdActive] = useState<boolean>(false);
+
+  // Trigger Google AdMob App Open Ad when app opens (if enabled)
+  useEffect(() => {
+    if (settings.enableAppOpenAd !== false) {
+      const timer = setTimeout(() => {
+        setIsAppOpenAdActive(true);
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [settings.enableAppOpenAd]);
 
   // Check URL hash for direct #privacy navigation (Play Store compliant)
   useEffect(() => {
@@ -441,12 +453,22 @@ export default function App() {
         onInstallPWA={install}
         isInstallable={isInstallable}
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
+        onTestAppOpenAd={() => setIsAppOpenAdActive(true)}
       />
 
       {/* 7. Privacy Policy Modal (Google Play Console Mandatory) */}
       <PrivacyPolicyModal
         isOpen={isPrivacyOpen}
         onClose={() => setIsPrivacyOpen(false)}
+      />
+
+      {/* 8. Google AdMob App Open / Interstitial Full-Screen Ad */}
+      <AppOpenAdModal
+        isOpen={isAppOpenAdActive}
+        onClose={() => setIsAppOpenAdActive(false)}
+        adUnitId={settings.admobAppOpenId || 'ca-app-pub-3940256099942544/9257395921'}
+        testMode={settings.admobTestMode !== false}
+        onOpenPrivacy={() => setIsPrivacyOpen(true)}
       />
     </div>
   );

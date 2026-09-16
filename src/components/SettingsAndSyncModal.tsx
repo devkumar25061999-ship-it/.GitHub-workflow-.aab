@@ -16,6 +16,7 @@ interface SettingsAndSyncModalProps {
   onInstallPWA?: () => void;
   isInstallable?: boolean;
   onOpenPrivacy?: () => void;
+  onTestAppOpenAd?: () => void;
 }
 
 export const SettingsAndSyncModal: React.FC<SettingsAndSyncModalProps> = ({
@@ -31,6 +32,7 @@ export const SettingsAndSyncModal: React.FC<SettingsAndSyncModalProps> = ({
   onInstallPWA,
   isInstallable,
   onOpenPrivacy,
+  onTestAppOpenAd,
 }) => {
   const [formData, setFormData] = useState<AppSettings>(settings);
   const [syncing, setSyncing] = useState(false);
@@ -226,18 +228,61 @@ export const SettingsAndSyncModal: React.FC<SettingsAndSyncModalProps> = ({
             </div>
 
             {/* Google AdMob Settings */}
-            <div className="pt-2 border-t border-gray-200 space-y-2">
+            <div className="pt-2 border-t border-gray-200 space-y-2.5">
               <span className="text-xs font-bold text-gray-700 block uppercase tracking-wider flex items-center gap-1.5">
                 <Megaphone className="w-4 h-4 text-amber-600" />
-                Google AdMob Monetization
+                Google AdMob Monetization (Ads Setup)
               </span>
               <p className="text-[11px] text-gray-600">
-                Play Store par upload hone ke baad live ads chalane ke liye apna AdMob Banner Ad Unit ID enter karein.
+                Play Store par upload hone ke baad live ads chalane ke liye apna AdMob App Open &amp; Banner Ad Unit ID enter karein.
               </p>
 
+              {/* Toggle 1: App Open Ad (App khulte hi aane wali ad) */}
+              <div className="flex items-center justify-between p-2.5 bg-blue-50/80 border border-blue-200 rounded-xl">
+                <div>
+                  <span className="text-xs font-bold text-blue-950 block">
+                    App Open Full-Screen Ad
+                  </span>
+                  <span className="text-[10px] text-blue-800">
+                    Jab app khola jaye, tab full-screen skip-able ad show hogi
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      enableAppOpenAd: formData.enableAppOpenAd === false ? true : false,
+                    })
+                  }
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition cursor-pointer ${
+                    formData.enableAppOpenAd !== false
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-300 text-gray-700'
+                  }`}
+                >
+                  {formData.enableAppOpenAd !== false ? 'ENABLED' : 'DISABLED'}
+                </button>
+              </div>
+
+              {/* App Open Unit ID */}
               <div>
                 <label className="text-xs font-medium text-gray-600 block mb-1">
-                  AdMob Banner Ad Unit ID
+                  AdMob App Open Ad Unit ID
+                </label>
+                <input
+                  type="text"
+                  value={formData.admobAppOpenId || ''}
+                  onChange={(e) => setFormData({ ...formData, admobAppOpenId: e.target.value })}
+                  placeholder="ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY"
+                  className="w-full font-mono text-xs border border-gray-300 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Banner Unit ID */}
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1">
+                  AdMob Bottom Banner Ad Unit ID
                 </label>
                 <input
                   type="text"
@@ -248,11 +293,14 @@ export const SettingsAndSyncModal: React.FC<SettingsAndSyncModalProps> = ({
                 />
               </div>
 
-              <div className="flex items-center justify-between p-2 bg-amber-50/70 border border-amber-200 rounded-lg">
+              {/* Test Mode Toggle & Live Preview Button */}
+              <div className="flex items-center justify-between p-2 bg-amber-50/80 border border-amber-200 rounded-lg">
                 <div>
-                  <span className="text-xs font-bold text-amber-950 block">AdMob Test Mode</span>
+                  <span className="text-xs font-bold text-amber-950 block">AdMob Mode</span>
                   <span className="text-[10px] text-amber-800">
-                    Google Test ads will show. Turn OFF when publishing live to Play Store.
+                    {formData.admobTestMode !== false
+                      ? 'Currently Google Test Ads'
+                      : 'Live AdMob Ads (Publishing)'}
                   </span>
                 </div>
                 <button
@@ -269,9 +317,24 @@ export const SettingsAndSyncModal: React.FC<SettingsAndSyncModalProps> = ({
                       : 'bg-emerald-600 text-white'
                   }`}
                 >
-                  {formData.admobTestMode !== false ? 'TEST ON' : 'LIVE ON'}
+                  {formData.admobTestMode !== false ? 'TEST ADS' : 'LIVE ADS'}
                 </button>
               </div>
+
+              {/* Quick Preview App Open Ad Button */}
+              {onTestAppOpenAd && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onTestAppOpenAd();
+                  }}
+                  className="w-full py-1.5 px-3 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <Megaphone className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Test / Preview App Open Ad Now</span>
+                </button>
+              )}
             </div>
 
             <button

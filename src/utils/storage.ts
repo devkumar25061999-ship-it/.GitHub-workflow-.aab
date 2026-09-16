@@ -12,7 +12,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   employeeName: 'Self',
   admobAppId: 'ca-app-pub-3940256099942544~3347511713',
   admobBannerId: 'ca-app-pub-3940256099942544/6300978111',
+  admobInterstitialId: 'ca-app-pub-3940256099942544/1033173712',
+  admobAppOpenId: 'ca-app-pub-3940256099942544/9257395921',
   admobTestMode: true,
+  enableAppOpenAd: true,
+  enableInterstitialOnReport: true,
 };
 
 // Initial sample data matching Screenshot 4 (September 2026)
