@@ -5,12 +5,14 @@ interface AdMobBannerProps {
   admobBannerId?: string;
   testMode?: boolean;
   onOpenPrivacy?: () => void;
+  onOpenAdsSetup?: () => void;
 }
 
 export const AdMobBanner: React.FC<AdMobBannerProps> = ({
-  admobBannerId = 'ca-app-pub-3940256099942544/6300978111', // Google official test banner unit ID
+  admobBannerId = 'ca-app-pub-2133508635089094/7668217896',
   testMode = true,
   onOpenPrivacy,
+  onOpenAdsSetup,
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -21,20 +23,33 @@ export const AdMobBanner: React.FC<AdMobBannerProps> = ({
     >
       {/* Google Play Policy required Ad label & info bar */}
       <div className="w-full max-w-[320px] flex items-center justify-between text-[10px] text-gray-500 mb-0.5 px-1">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <span className="bg-gray-300 text-gray-700 font-bold px-1 rounded-[3px] text-[9px] uppercase tracking-wider">
             Ad
           </span>
           <span className="text-[10px] text-gray-600 font-medium">Google AdMob</span>
+          {testMode && (
+            <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-1 rounded">
+              Test
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
+          {onOpenAdsSetup && (
+            <button
+              onClick={onOpenAdsSetup}
+              className="text-[10px] text-amber-700 hover:text-amber-900 font-bold underline cursor-pointer"
+            >
+              ⚙️ Ads Setup
+            </button>
+          )}
           {onOpenPrivacy && (
             <button
               onClick={onOpenPrivacy}
               className="text-[10px] text-gray-600 hover:text-gray-900 underline cursor-pointer"
             >
-              Ad Privacy
+              Privacy
             </button>
           )}
           <button

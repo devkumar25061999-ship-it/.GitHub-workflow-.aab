@@ -47,7 +47,7 @@ Run the following commands in your project terminal:
 npm install @capacitor/core @capacitor/cli @capacitor/android
 
 # Initialize Capacitor project
-npx cap init "Attendance Plus" "com.attendanceplus.app" --web-dir "dist"
+npx cap init "Attendance Plus" "com.devkumar.attendanceplus" --web-dir "dist"
 
 # Install official AdMob Capacitor plugin
 npm install @capacitor-community/admob

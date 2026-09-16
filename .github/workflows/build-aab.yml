@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       admob_app_id:
-        description: 'Google AdMob App ID (optional, leave blank for official test ads)'
+        description: 'Google AdMob App ID'
         required: false
-        default: 'ca-app-pub-3940256099942544~3347511713'
+        default: 'ca-app-pub-2133508635089094~1211511400'
 
 jobs:
   build-aab:
@@ -49,7 +49,7 @@ jobs:
         run: |
           ADMOB_APP_ID="${{ github.event.inputs.admob_app_id }}"
           if [ -z "$ADMOB_APP_ID" ]; then
-            ADMOB_APP_ID="ca-app-pub-3940256099942544~3347511713"
+            ADMOB_APP_ID="ca-app-pub-2133508635089094~1211511400"
           fi
           
           python3 - <<EOF
@@ -93,28 +93,44 @@ jobs:
             sed -i '/android {/a \    lintOptions { abortOnError false; checkReleaseBuilds false; }' android/app/build.gradle
           fi
 
-      - name: Build Android App Bundle (.aab) with Gradle
+      - name: Build Android App Bundle (.aab) & Release APK (.apk) with Gradle
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew bundleRelease -x lint -x lintVitalAnalyzeRelease -x test --no-daemon --stacktrace
+          ./gradlew bundleRelease assembleRelease -x lint -x lintVitalAnalyzeRelease -x test --no-daemon --stacktrace
 
-      - name: Sign AAB Bundle for Google Play Store
+      - name: Sign AAB Bundle & APK for Google Play & Amazon Appstore
         run: |
+          keytool -genkeypair -v -keystore release.keystore -alias attendanceplus -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "attendance123" -keypass "attendance123" \
+            -dname "CN=Attendance Plus, OU=Mobile, O=Dev Kumar, L=Delhi, C=IN"
+
           AAB_PATH=$(find android/app/build/outputs/bundle -name "*.aab" | head -n 1)
           if [ -n "$AAB_PATH" ]; then
-            echo "Found AAB at $AAB_PATH. Signing with release keystore..."
-            keytool -genkeypair -v -keystore release.keystore -alias attendanceplus -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass "attendance123" -keypass "attendance123" \
-              -dname "CN=Attendance Plus, OU=Mobile, O=Dev Kumar, L=Delhi, C=IN"
+            echo "Signing AAB at $AAB_PATH..."
             jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore release.keystore -storepass "attendance123" -keypass "attendance123" "$AAB_PATH" attendanceplus
             echo "Successfully signed AAB!"
           fi
 
-      - name: Upload Clean AAB Artifact (Direct Phone Download)
+          APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          if [ -n "$APK_PATH" ]; then
+            echo "Signing APK at $APK_PATH..."
+            jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore release.keystore -storepass "attendance123" -keypass "attendance123" "$APK_PATH" attendanceplus
+            echo "Successfully signed APK!"
+          fi
+
+      - name: Upload Google Play Store AAB Bundle
         uses: actions/upload-artifact@v4
         with:
           name: AttendancePlus-PlayStore-Release-AAB
           path: |
             android/app/build/outputs/bundle/**/*.aab
+          retention-days: 14
+
+      - name: Upload Amazon Appstore & Direct Install APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AttendancePlus-Amazon-Release-APK
+          path: |
+            android/app/build/outputs/apk/release/**/*.apk
           retention-days: 14

@@ -51,10 +51,21 @@ export default function App() {
   const [isReportOpen, setIsReportOpen] = useState<boolean>(false);
   const [isResetOpen, setIsResetOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [settingsTab, setSettingsTab] = useState<'general' | 'admob' | 'backup' | 'apk'>('general');
   const [isPrivacyOpen, setIsPrivacyOpen] = useState<boolean>(false);
   const [overtimeModalDate, setOvertimeModalDate] = useState<string | null>(null);
   const [detailModalDate, setDetailModalDate] = useState<string | null>(null);
   const [isAppOpenAdActive, setIsAppOpenAdActive] = useState<boolean>(false);
+
+  const handleOpenAdsSetup = () => {
+    setSettingsTab('admob');
+    setIsSettingsOpen(true);
+  };
+
+  const handleOpenApk = () => {
+    setSettingsTab('apk');
+    setIsSettingsOpen(true);
+  };
 
   // Trigger Google AdMob App Open Ad when app opens (if enabled)
   useEffect(() => {
@@ -333,7 +344,12 @@ export default function App() {
             onOpenYearPicker={() => setIsYearPickerOpen(true)}
             onOpenReport={() => setIsReportOpen(true)}
             onOpenReset={() => setIsResetOpen(true)}
-            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenSettings={() => {
+              setSettingsTab('general');
+              setIsSettingsOpen(true);
+            }}
+            onOpenAdsSetup={handleOpenAdsSetup}
+            onOpenApk={handleOpenApk}
             isOnline={isOnline}
             pendingSync={pendingSync}
             onInstallPWA={install}
@@ -379,6 +395,7 @@ export default function App() {
             admobBannerId={settings.admobBannerId}
             testMode={settings.admobTestMode}
             onOpenPrivacy={() => setIsPrivacyOpen(true)}
+            onOpenAdsSetup={handleOpenAdsSetup}
           />
         </div>
 
@@ -461,6 +478,7 @@ export default function App() {
       <SettingsAndSyncModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+        initialTab={settingsTab}
         settings={settings}
         onSaveSettings={handleSaveSettings}
         records={records}

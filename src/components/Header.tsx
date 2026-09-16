@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, BarChart3, Trash2, Cloud, CloudOff, RefreshCw, Settings2, Download } from 'lucide-react';
+import { ChevronDown, BarChart3, Trash2, Cloud, CloudOff, RefreshCw, Settings2, Download, Package } from 'lucide-react';
 
 interface HeaderProps {
   currentYear: number;
@@ -7,6 +7,8 @@ interface HeaderProps {
   onOpenReport: () => void;
   onOpenReset: () => void;
   onOpenSettings: () => void;
+  onOpenAdsSetup?: () => void;
+  onOpenApk?: () => void;
   isOnline: boolean;
   pendingSync: boolean;
   onInstallPWA?: () => void;
@@ -19,6 +21,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenReport,
   onOpenReset,
   onOpenSettings,
+  onOpenAdsSetup,
+  onOpenApk,
   isOnline,
   pendingSync,
   onInstallPWA,
@@ -90,6 +94,31 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="w-1.5 h-5 bg-sky-400 rounded-sm"></span>
           </div>
         </button>
+
+        {/* Ads Setup Quick Button */}
+        {onOpenAdsSetup && (
+          <button
+            id="btn-open-ads-setup"
+            onClick={onOpenAdsSetup}
+            title="Google AdMob Ads Setup & Earning"
+            className="flex items-center gap-1 px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-gray-950 rounded-md text-xs font-black shadow-xs active:scale-95 transition cursor-pointer"
+          >
+            <span>💰 Ads</span>
+          </button>
+        )}
+
+        {/* APK & AAB Quick Button */}
+        {onOpenApk && (
+          <button
+            id="btn-open-apk"
+            onClick={onOpenApk}
+            title="Build & Download .APK / .AAB"
+            className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-xs font-black shadow-xs active:scale-95 transition cursor-pointer"
+          >
+            <Package className="w-3.5 h-3.5" />
+            <span>.APK</span>
+          </button>
+        )}
 
         {/* Settings & Backup/Sync */}
         <button

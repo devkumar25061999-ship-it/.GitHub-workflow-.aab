@@ -10,10 +10,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   currency: '₹',
   companyName: 'General Works',
   employeeName: 'Self',
-  admobAppId: 'ca-app-pub-3940256099942544~3347511713',
-  admobBannerId: 'ca-app-pub-3940256099942544/6300978111',
+  admobAppId: 'ca-app-pub-2133508635089094~1211511400',
+  admobBannerId: 'ca-app-pub-2133508635089094/7668217896',
   admobInterstitialId: 'ca-app-pub-3940256099942544/1033173712',
-  admobAppOpenId: 'ca-app-pub-3940256099942544/9257395921',
+  admobAppOpenId: 'ca-app-pub-2133508635089094/1169248997',
   admobTestMode: true,
   enableAppOpenAd: true,
   enableInterstitialOnReport: true,
@@ -94,7 +94,17 @@ export function loadStoredSettings(): AppSettings {
   try {
     const saved = localStorage.getItem(STORAGE_KEY_SETTINGS);
     if (saved) {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+      const parsed = JSON.parse(saved);
+      if (!parsed.admobAppId || parsed.admobAppId.includes('3940256099942544')) {
+        parsed.admobAppId = 'ca-app-pub-2133508635089094~1211511400';
+      }
+      if (!parsed.admobAppOpenId || parsed.admobAppOpenId.includes('3940256099942544')) {
+        parsed.admobAppOpenId = 'ca-app-pub-2133508635089094/1169248997';
+      }
+      if (!parsed.admobBannerId || parsed.admobBannerId.includes('3940256099942544')) {
+        parsed.admobBannerId = 'ca-app-pub-2133508635089094/7668217896';
+      }
+      return { ...DEFAULT_SETTINGS, ...parsed };
     }
   } catch (err) {
     console.error('Failed to load settings', err);
