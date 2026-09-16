@@ -26,6 +26,8 @@ import { DayDetailModal } from './components/DayDetailModal';
 import { ResetConfirmModal } from './components/ResetConfirmModal';
 import { SettingsAndSyncModal } from './components/SettingsAndSyncModal';
 import { OfflineBanner } from './components/OfflineBanner';
+import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
+import { AdMobBanner } from './components/AdMobBanner';
 
 export default function App() {
   // Initial state defaults to September 2026 matching user's uploaded screenshots
@@ -48,8 +50,16 @@ export default function App() {
   const [isReportOpen, setIsReportOpen] = useState<boolean>(false);
   const [isResetOpen, setIsResetOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState<boolean>(false);
   const [overtimeModalDate, setOvertimeModalDate] = useState<string | null>(null);
   const [detailModalDate, setDetailModalDate] = useState<string | null>(null);
+
+  // Check URL hash for direct #privacy navigation (Play Store compliant)
+  useEffect(() => {
+    if (window.location.hash === '#privacy' || window.location.pathname === '/privacy') {
+      setIsPrivacyOpen(true);
+    }
+  }, []);
 
   // Auto-sync simulation when online
   useEffect(() => {
@@ -332,6 +342,36 @@ export default function App() {
             }}
           />
         </footer>
+
+        {/* Google AdMob Banner Slot (Google Play Console Policy Compliant) */}
+        <div className="w-full mt-2 mb-1">
+          <AdMobBanner
+            admobBannerId={settings.admobBannerId}
+            testMode={settings.admobTestMode}
+            onOpenPrivacy={() => setIsPrivacyOpen(true)}
+          />
+        </div>
+
+        {/* Play Store & Developer Compliance Footer */}
+        <div className="w-full text-center text-[11px] text-gray-500 py-1 flex items-center justify-center gap-2">
+          <span>Attendance Plus v1.0.0</span>
+          <span>•</span>
+          <button
+            onClick={() => setIsPrivacyOpen(true)}
+            className="hover:text-gray-900 underline font-medium cursor-pointer"
+          >
+            Privacy Policy
+          </button>
+          <span>•</span>
+          <a
+            href="/privacy.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-gray-900 underline cursor-pointer"
+          >
+            Play Console URL
+          </a>
+        </div>
       </div>
 
       {/* Modals */}
@@ -400,6 +440,13 @@ export default function App() {
         lastSyncTime={lastSync}
         onInstallPWA={install}
         isInstallable={isInstallable}
+        onOpenPrivacy={() => setIsPrivacyOpen(true)}
+      />
+
+      {/* 7. Privacy Policy Modal (Google Play Console Mandatory) */}
+      <PrivacyPolicyModal
+        isOpen={isPrivacyOpen}
+        onClose={() => setIsPrivacyOpen(false)}
       />
     </div>
   );

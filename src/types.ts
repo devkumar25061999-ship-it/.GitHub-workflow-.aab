@@ -41,4 +41,7 @@ export interface AppSettings {
   currency: string;
   companyName: string;
   employeeName: string;
+  admobAppId?: string;
+  admobBannerId?: string;
+  admobTestMode?: boolean;
 }

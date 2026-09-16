@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Cloud, CloudOff, RefreshCw, Download, Upload, Check, DollarSign, Smartphone } from 'lucide-react';
+import { X, Cloud, CloudOff, RefreshCw, Download, Upload, Check, DollarSign, Smartphone, ShieldCheck, Megaphone, ExternalLink } from 'lucide-react';
 import { AppSettings, AttendanceDatabase } from '../types';
 import { exportBackupJSON, importBackupJSON } from '../utils/storage';
 
@@ -15,6 +15,7 @@ interface SettingsAndSyncModalProps {
   lastSyncTime: number | null;
   onInstallPWA?: () => void;
   isInstallable?: boolean;
+  onOpenPrivacy?: () => void;
 }
 
 export const SettingsAndSyncModal: React.FC<SettingsAndSyncModalProps> = ({
@@ -29,6 +30,7 @@ export const SettingsAndSyncModal: React.FC<SettingsAndSyncModalProps> = ({
   lastSyncTime,
   onInstallPWA,
   isInstallable,
+  onOpenPrivacy,
 }) => {
   const [formData, setFormData] = useState<AppSettings>(settings);
   const [syncing, setSyncing] = useState(false);
@@ -223,14 +225,100 @@ export const SettingsAndSyncModal: React.FC<SettingsAndSyncModalProps> = ({
               </div>
             </div>
 
+            {/* Google AdMob Settings */}
+            <div className="pt-2 border-t border-gray-200 space-y-2">
+              <span className="text-xs font-bold text-gray-700 block uppercase tracking-wider flex items-center gap-1.5">
+                <Megaphone className="w-4 h-4 text-amber-600" />
+                Google AdMob Monetization
+              </span>
+              <p className="text-[11px] text-gray-600">
+                Play Store par upload hone ke baad live ads chalane ke liye apna AdMob Banner Ad Unit ID enter karein.
+              </p>
+
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1">
+                  AdMob Banner Ad Unit ID
+                </label>
+                <input
+                  type="text"
+                  value={formData.admobBannerId || ''}
+                  onChange={(e) => setFormData({ ...formData, admobBannerId: e.target.value })}
+                  placeholder="ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY"
+                  className="w-full font-mono text-xs border border-gray-300 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-2 bg-amber-50/70 border border-amber-200 rounded-lg">
+                <div>
+                  <span className="text-xs font-bold text-amber-950 block">AdMob Test Mode</span>
+                  <span className="text-[10px] text-amber-800">
+                    Google Test ads will show. Turn OFF when publishing live to Play Store.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      admobTestMode: formData.admobTestMode === false ? true : false,
+                    })
+                  }
+                  className={`px-2.5 py-1 text-xs font-bold rounded-md transition cursor-pointer ${
+                    formData.admobTestMode !== false
+                      ? 'bg-amber-600 text-white'
+                      : 'bg-emerald-600 text-white'
+                  }`}
+                >
+                  {formData.admobTestMode !== false ? 'TEST ON' : 'LIVE ON'}
+                </button>
+              </div>
+            </div>
+
             <button
               type="submit"
               className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer"
             >
               {savedSuccess ? <Check className="w-4 h-4 text-emerald-300" /> : null}
-              <span>{savedSuccess ? 'Settings Saved!' : 'Save Calculation Settings'}</span>
+              <span>{savedSuccess ? 'Settings Saved!' : 'Save Calculation & Ad Settings'}</span>
             </button>
           </form>
+
+          {/* Privacy Policy & Google Play Console Submission */}
+          <div className="space-y-2 pt-2 border-t border-gray-200">
+            <span className="text-xs font-bold text-gray-700 block uppercase tracking-wider flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              Play Console Compliance & Privacy
+            </span>
+            <p className="text-xs text-gray-600">
+              Google Play Console requires an accessible Privacy Policy mentioning AdMob and local storage data safety.
+            </p>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {onOpenPrivacy && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenPrivacy();
+                  }}
+                  className="py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                  <span>View Privacy Policy</span>
+                </button>
+              )}
+
+              <a
+                href="/privacy.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition text-center"
+              >
+                <span>Open /privacy.html</span>
+                <ExternalLink className="w-3.5 h-3.5 text-gray-600" />
+              </a>
+            </div>
+          </div>
 
           {/* Backup & Restore */}
           <div className="space-y-2 pt-2 border-t border-gray-200">

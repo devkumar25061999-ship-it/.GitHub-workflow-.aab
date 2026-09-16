@@ -10,6 +10,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   currency: '₹',
   companyName: 'General Works',
   employeeName: 'Self',
+  admobAppId: 'ca-app-pub-3940256099942544~3347511713',
+  admobBannerId: 'ca-app-pub-3940256099942544/6300978111',
+  admobTestMode: true,
 };
 
 // Initial sample data matching Screenshot 4 (September 2026)
