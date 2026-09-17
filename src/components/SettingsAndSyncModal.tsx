@@ -607,12 +607,15 @@ export const SettingsAndSyncModal: React.FC<SettingsAndSyncModalProps> = ({
                   Microsoft PWABuilder official service aapke is app ko 30 seconds mein real, signed Android <strong>.apk</strong> aur Google Play Store <strong>.aab</strong> mein pack kar deti hai.
                 </p>
 
-                <div className="bg-white p-3 rounded-lg border border-emerald-200 text-xs space-y-1.5">
-                  <div className="font-bold text-gray-800">Aasan 3 Steps:</div>
-                  <ol className="list-decimal list-inside space-y-1 text-gray-700 text-[11px]">
+                <div className="bg-white p-3 rounded-lg border border-emerald-200 text-xs space-y-2">
+                  <div className="font-bold text-gray-800">Signed APK Download Karne Ka Tarika (Mobile Install Ke Liye):</div>
+                  <ol className="list-decimal list-inside space-y-1.5 text-gray-700 text-[11px]">
                     <li>Neeche <strong>"Open 1-Click APK Generator"</strong> dabayein.</li>
                     <li>Wahan <strong>"Package for Android"</strong> par click karein.</li>
-                    <li><strong>"Generate"</strong> dabate hi aapki signed <strong>.apk</strong> aur <strong>.aab</strong> download ho jayegi!</li>
+                    <li>
+                      <span className="font-bold text-amber-700">⚠️ Zaroori Step:</span> Wahan <strong>"Signing Key"</strong> option par click karein aur <strong>"Create new"</strong> ya <strong>"Generate key"</strong> select karein (is-se APK <em>Signed</em> banti hai).
+                    </li>
+                    <li>Fir <strong>"Generate"</strong> dabayein. Ab zip ke andar <strong>app-release-signed.apk</strong> milegi jo kisi bhi phone par 1-click install hogi!</li>
                   </ol>
                 </div>
 
@@ -626,6 +629,44 @@ export const SettingsAndSyncModal: React.FC<SettingsAndSyncModalProps> = ({
                   <span>Open 1-Click APK Generator (PWABuilder)</span>
                   <ExternalLink className="w-3.5 h-3.5 opacity-80" />
                 </a>
+              </div>
+
+              {/* QUICK SIGN FOR EXISTING UNSIGNED APK */}
+              <div className="p-3.5 rounded-xl border border-amber-300 bg-amber-50/70 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-amber-700" />
+                    Unsigned APK ko 1-Click Mein "Signed" Banayein
+                  </span>
+                  <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold">
+                    30 Seconds Fix
+                  </span>
+                </div>
+
+                <p className="text-xs text-amber-900 leading-relaxed">
+                  Agar aapne pehle se <code>app-release-unsigned.apk</code> download kar li hai, toh use dobara banane ki zaroorat nahi hai. Aap free online tool se use turant <strong>Signed (Installable)</strong> bana sakte hain:
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                  <a
+                    href="https://apk-signer.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 transition text-center"
+                  >
+                    <span>1. Online Signer (apk-signer.com)</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                  <a
+                    href="https://play.google.com/store/apps/details?id=kellinwood.zipsigner2"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-2 px-3 bg-gray-800 hover:bg-gray-900 text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 transition text-center"
+                  >
+                    <span>2. Phone App (ZipSigner / APK Signer)</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
               </div>
 
               {/* METHOD 2: GITHUB ACTIONS AUTO BUILD */}

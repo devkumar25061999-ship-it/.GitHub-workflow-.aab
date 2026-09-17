@@ -348,8 +348,6 @@ export default function App() {
               setSettingsTab('general');
               setIsSettingsOpen(true);
             }}
-            onOpenAdsSetup={handleOpenAdsSetup}
-            onOpenApk={handleOpenApk}
             isOnline={isOnline}
             pendingSync={pendingSync}
             onInstallPWA={install}
@@ -395,12 +393,11 @@ export default function App() {
             admobBannerId={settings.admobBannerId}
             testMode={settings.admobTestMode}
             onOpenPrivacy={() => setIsPrivacyOpen(true)}
-            onOpenAdsSetup={handleOpenAdsSetup}
           />
         </div>
 
-        {/* Play Store & Developer Compliance Footer */}
-        <div className="w-full text-center text-[11px] text-gray-500 py-1 flex items-center justify-center gap-2">
+        {/* Clean Application Footer */}
+        <div className="w-full text-center text-[11px] text-gray-500 py-1.5 flex items-center justify-center gap-2">
           <span>Attendance Plus v1.0.0</span>
           <span>•</span>
           <button
@@ -409,15 +406,6 @@ export default function App() {
           >
             Privacy Policy
           </button>
-          <span>•</span>
-          <a
-            href="/privacy.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-gray-900 underline cursor-pointer"
-          >
-            Play Console URL
-          </a>
         </div>
       </div>
 

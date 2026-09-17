@@ -5,14 +5,12 @@ interface AdMobBannerProps {
   admobBannerId?: string;
   testMode?: boolean;
   onOpenPrivacy?: () => void;
-  onOpenAdsSetup?: () => void;
 }
 
 export const AdMobBanner: React.FC<AdMobBannerProps> = ({
   admobBannerId = 'ca-app-pub-2133508635089094/7668217896',
-  testMode = true,
+  testMode = false,
   onOpenPrivacy,
-  onOpenAdsSetup,
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -27,35 +25,22 @@ export const AdMobBanner: React.FC<AdMobBannerProps> = ({
           <span className="bg-gray-300 text-gray-700 font-bold px-1 rounded-[3px] text-[9px] uppercase tracking-wider">
             Ad
           </span>
-          <span className="text-[10px] text-gray-600 font-medium">Google AdMob</span>
-          {testMode && (
-            <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-1 rounded">
-              Test
-            </span>
-          )}
+          <span className="text-[10px] text-gray-500 font-medium">Google AdMob</span>
         </div>
 
         <div className="flex items-center gap-2">
-          {onOpenAdsSetup && (
-            <button
-              onClick={onOpenAdsSetup}
-              className="text-[10px] text-amber-700 hover:text-amber-900 font-bold underline cursor-pointer"
-            >
-              ⚙️ Ads Setup
-            </button>
-          )}
           {onOpenPrivacy && (
             <button
               onClick={onOpenPrivacy}
-              className="text-[10px] text-gray-600 hover:text-gray-900 underline cursor-pointer"
+              className="text-[10px] text-gray-500 hover:text-gray-800 underline cursor-pointer"
             >
               Privacy
             </button>
           )}
           <button
             onClick={() => setShowTooltip((prev) => !prev)}
-            className="text-gray-500 hover:text-gray-800 transition cursor-pointer"
-            title="AdMob Info"
+            className="text-gray-400 hover:text-gray-700 transition cursor-pointer"
+            title="Ad Info"
           >
             <Info className="w-3 h-3" />
           </button>
@@ -64,27 +49,22 @@ export const AdMobBanner: React.FC<AdMobBannerProps> = ({
 
       {/* Tooltip on tap */}
       {showTooltip && (
-        <div className="w-full max-w-[320px] p-2 mb-1 bg-gray-900 text-white rounded-lg text-[11px] shadow-lg animate-in fade-in flex flex-col gap-1 z-10">
+        <div className="w-full max-w-[320px] p-2.5 mb-1 bg-gray-900 text-white rounded-lg text-[11px] shadow-lg animate-in fade-in flex flex-col gap-1 z-10">
           <div className="flex items-center justify-between">
             <span className="font-bold text-amber-300 flex items-center gap-1">
               <Sparkles className="w-3 h-3" />
-              AdMob Live Ad Slot
+              Google AdMob Banner
             </span>
             <button
               onClick={() => setShowTooltip(false)}
-              className="text-gray-400 hover:text-white"
+              className="text-gray-400 hover:text-white text-xs px-1"
             >
               ✕
             </button>
           </div>
-          <p className="text-gray-200">
-            {testMode
-              ? 'Currently in Test Mode with Google Test ID. Once approved on Play Store, live ads will start displaying automatically!'
-              : `Active Ad Unit ID: ${admobBannerId}`}
+          <p className="text-gray-300 text-[10px] leading-relaxed">
+            Standard 320x50 Mobile Leaderboard Ad. Powered by Google AdMob network.
           </p>
-          <span className="text-[10px] text-gray-400">
-            Ad unit can be changed anytime in Settings &gt; AdMob Setup.
-          </span>
         </div>
       )}
 
@@ -93,37 +73,32 @@ export const AdMobBanner: React.FC<AdMobBannerProps> = ({
         id="admob-ad-unit-box"
         className="w-[320px] h-[50px] bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-md shadow-xs border border-slate-700/80 flex items-center justify-between px-3 relative overflow-hidden"
       >
-        {/* Subtle decorative banner badge */}
+        {/* Subtle decorative banner glow */}
         <div className="absolute -right-8 -top-8 w-24 h-24 bg-blue-500/10 rounded-full blur-sm pointer-events-none" />
 
         <div className="flex items-center gap-2.5 z-0">
-          {/* Ad Icon */}
-          <div className="w-8 h-8 rounded bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center font-black text-slate-950 text-xs shadow-xs shrink-0">
-            Ad
+          {/* Ad Sponsor Icon */}
+          <div className="w-8 h-8 rounded bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xs shadow-xs shrink-0">
+            G
           </div>
           <div className="flex flex-col text-left">
             <span className="text-xs font-bold text-white tracking-tight leading-tight flex items-center gap-1">
-              Google AdMob Partner
-              {testMode && (
-                <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] px-1 rounded font-normal">
-                  Test Mode
-                </span>
-              )}
+              Google Workspace
             </span>
-            <span className="text-[10px] text-slate-300 leading-tight truncate max-w-[155px]">
-              Ready for Play Store monetization
+            <span className="text-[10px] text-slate-300 leading-tight truncate max-w-[170px]">
+              Cloud tools & security for teams
             </span>
           </div>
         </div>
 
-        {/* Action button */}
+        {/* Call to action button */}
         <a
-          href="https://admob.google.com"
+          href="https://workspace.google.com"
           target="_blank"
           rel="noopener noreferrer"
           className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold px-2.5 py-1.5 rounded flex items-center gap-1 shadow-xs transition active:scale-95 shrink-0 z-0"
         >
-          <span>Learn</span>
+          <span>Open</span>
           <ExternalLink className="w-2.5 h-2.5" />
         </a>
       </div>
