@@ -29,6 +29,9 @@ import { OfflineBanner } from './components/OfflineBanner';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { AdMobBanner } from './components/AdMobBanner';
 import { AppOpenAdModal } from './components/AppOpenAdModal';
+import { HowToUseModal } from './components/HowToUseModal';
+import { FacePunchModal } from './components/FacePunchModal';
+import { Camera, HelpCircle, FileSpreadsheet } from 'lucide-react';
 
 export default function App() {
   // Initial state defaults to September 2026 matching user's uploaded screenshots
@@ -53,9 +56,46 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [settingsTab, setSettingsTab] = useState<'general' | 'admob' | 'backup' | 'apk'>('general');
   const [isPrivacyOpen, setIsPrivacyOpen] = useState<boolean>(false);
+  const [isHowToUseOpen, setIsHowToUseOpen] = useState<boolean>(false);
+  const [isFacePunchOpen, setIsFacePunchOpen] = useState<boolean>(false);
   const [overtimeModalDate, setOvertimeModalDate] = useState<string | null>(null);
   const [detailModalDate, setDetailModalDate] = useState<string | null>(null);
   const [isAppOpenAdActive, setIsAppOpenAdActive] = useState<boolean>(false);
+
+  const handleFacePunchSuccess = (data: {
+    status: AttendanceStatus;
+    inTime: string;
+    outTime: string;
+    punchType: 'in' | 'out';
+    faceSnapshot?: string;
+  }) => {
+    const today = new Date();
+    const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    setRecords((prev) => {
+      const existing = prev[dateKey] || {
+        date: dateKey,
+        status: data.status,
+        overtimeHours: 0,
+        updatedAt: Date.now(),
+      };
+
+      const updated: DayRecord = {
+        ...existing,
+        status: data.status,
+        inTime: data.punchType === 'in' ? data.inTime : (existing.inTime || data.inTime),
+        outTime: data.punchType === 'out' ? data.outTime : existing.outTime,
+        punchMethod: 'face_punch',
+        faceSnapshot: data.faceSnapshot || existing.faceSnapshot,
+        updatedAt: Date.now(),
+      };
+
+      const nextDb = { ...prev, [dateKey]: updated };
+      saveStoredRecords(nextDb);
+      return nextDb;
+    });
+    setPendingSync(true);
+  };
 
   const handleOpenAdsSetup = () => {
     setSettingsTab('admob');
@@ -348,6 +388,9 @@ export default function App() {
               setSettingsTab('general');
               setIsSettingsOpen(true);
             }}
+            onOpenHowToUse={() => setIsHowToUseOpen(true)}
+            onOpenFacePunch={() => setIsFacePunchOpen(true)}
+            enableFacePunch={settings.enableFacePunch !== false}
             isOnline={isOnline}
             pendingSync={pendingSync}
             onInstallPWA={install}
@@ -365,6 +408,41 @@ export default function App() {
           onPrevMonth={handlePrevMonth}
           onNextMonth={handleNextMonth}
         />
+
+        {/* Prominent Quick Action Bar for Face Punch, How to Use & HR Excel */}
+        <div className="w-full px-3 py-1 flex items-center gap-2">
+          {settings.enableFacePunch !== false && (
+            <button
+              id="btn-prominent-face-punch"
+              onClick={() => setIsFacePunchOpen(true)}
+              className="flex-1 py-2 px-2.5 bg-gradient-to-r from-purple-700 via-purple-600 to-indigo-600 hover:from-purple-800 hover:to-indigo-700 text-white rounded-xl shadow-xs text-xs font-black flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
+              title="Camera Face Verification Duty Punch"
+            >
+              <Camera className="w-4 h-4 text-purple-200 shrink-0" />
+              <span className="truncate">Face Punch</span>
+            </button>
+          )}
+
+          <button
+            id="btn-prominent-how-to-use"
+            onClick={() => setIsHowToUseOpen(true)}
+            className="py-2 px-3 bg-amber-500 hover:bg-amber-600 text-gray-950 rounded-xl shadow-xs text-xs font-black flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
+            title="How to Use Guide"
+          >
+            <HelpCircle className="w-4 h-4 text-gray-900 shrink-0" />
+            <span>Guide</span>
+          </button>
+
+          <button
+            id="btn-prominent-hr-excel"
+            onClick={() => setIsReportOpen(true)}
+            className="py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl shadow-xs text-xs font-black flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
+            title="Download HR Excel / CSV Report"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-200 shrink-0" />
+            <span>HR Report</span>
+          </button>
+        </div>
 
         {/* Calendar Grid */}
         <main className="w-full flex justify-center my-1 flex-1">
@@ -493,6 +571,30 @@ export default function App() {
         adUnitId={settings.admobAppOpenId || 'ca-app-pub-3940256099942544/9257395921'}
         testMode={settings.admobTestMode !== false}
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
+      />
+
+      {/* 9. How to Use Guide Modal */}
+      <HowToUseModal
+        isOpen={isHowToUseOpen}
+        onClose={() => setIsHowToUseOpen(false)}
+        onOpenSettings={() => {
+          setIsHowToUseOpen(false);
+          setSettingsTab('general');
+          setIsSettingsOpen(true);
+        }}
+        onOpenFacePunch={() => {
+          setIsHowToUseOpen(false);
+          setIsFacePunchOpen(true);
+        }}
+      />
+
+      {/* 10. Face Punch Duty Verification Modal */}
+      <FacePunchModal
+        isOpen={isFacePunchOpen}
+        onClose={() => setIsFacePunchOpen(false)}
+        onPunchSuccess={handleFacePunchSuccess}
+        defaultShiftIn={settings.defaultShiftIn}
+        defaultShiftOut={settings.defaultShiftOut}
       />
     </div>
   );

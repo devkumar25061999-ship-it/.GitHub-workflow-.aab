@@ -242,14 +242,15 @@ export const SettingsAndSyncModal: React.FC<SettingsAndSyncModalProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1">Currency Symbol</label>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">Company / Contractor Name</label>
                   <input
                     type="text"
-                    value={formData.currency}
-                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                    value={formData.companyName || ''}
+                    onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                    placeholder="General Works"
                     className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 font-semibold"
                   />
-                  <span className="text-[10px] text-gray-500">मुद्रा चिन्ह (₹, $, AED, SAR)</span>
+                  <span className="text-[10px] text-gray-500">कंपनी / ठेकेदार का नाम</span>
                 </div>
 
                 <div>
@@ -263,6 +264,82 @@ export const SettingsAndSyncModal: React.FC<SettingsAndSyncModalProps> = ({
                   />
                   <span className="text-[10px] text-gray-500">कर्मचारी / वर्कर का नाम</span>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">Employee ID (कर्मचारी कोड)</label>
+                  <input
+                    type="text"
+                    value={formData.employeeId || ''}
+                    onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                    placeholder="EMP-001"
+                    className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">Department (विभाग)</label>
+                  <input
+                    type="text"
+                    value={formData.department || ''}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    placeholder="Operations / Staff"
+                    className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">Shift Start Time (ड्यूटी शुरू)</label>
+                  <input
+                    type="time"
+                    value={formData.defaultShiftIn || '09:00'}
+                    onChange={(e) => setFormData({ ...formData, defaultShiftIn: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">Shift End Time (ड्यूटी समाप्त)</label>
+                  <input
+                    type="time"
+                    value={formData.defaultShiftOut || '18:00'}
+                    onChange={(e) => setFormData({ ...formData, defaultShiftOut: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 font-semibold"
+                  />
+                </div>
+              </div>
+
+              {/* Optional Face Punch Biometric Toggle */}
+              <div className="p-3 bg-purple-50/80 border border-purple-200 rounded-xl space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-purple-950 block">Face Punch Duty Verification (Optional)</span>
+                    <span className="text-[11px] text-purple-700">
+                      Camera selfie aur biometric frame se attendance lagayein
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, enableFacePunch: !formData.enableFacePunch })}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                      formData.enableFacePunch ? 'bg-purple-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                        formData.enableFacePunch ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+                <span className="text-[10px] text-purple-600 block">
+                  {formData.enableFacePunch
+                    ? '✓ Enabled: Screen par Face Punch ka button dikhega'
+                    : '✗ Disabled: Normal 1-tap calendar mode active rahega'}
+                </span>
               </div>
 
               {/* Install PWA Prompt if applicable */}

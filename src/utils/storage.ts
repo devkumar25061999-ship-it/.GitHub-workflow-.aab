@@ -10,6 +10,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   currency: '₹',
   companyName: 'General Works',
   employeeName: 'Self',
+  employeeId: 'EMP-001',
+  department: 'Operations',
+  defaultShiftIn: '09:00',
+  defaultShiftOut: '18:00',
+  enableFacePunch: true, // Enabled by default so user can immediately see & test, optional toggle in settings
   admobAppId: 'ca-app-pub-2133508635089094~1211511400',
   admobBannerId: 'ca-app-pub-2133508635089094/7668217896',
   admobInterstitialId: 'ca-app-pub-3940256099942544/1033173712',
@@ -104,7 +109,11 @@ export function loadStoredSettings(): AppSettings {
       if (!parsed.admobBannerId || parsed.admobBannerId.includes('3940256099942544')) {
         parsed.admobBannerId = 'ca-app-pub-2133508635089094/7668217896';
       }
-      return { ...DEFAULT_SETTINGS, ...parsed };
+      const merged = { ...DEFAULT_SETTINGS, ...parsed };
+      if (merged.enableFacePunch === undefined) {
+        merged.enableFacePunch = true;
+      }
+      return merged;
     }
   } catch (err) {
     console.error('Failed to load settings', err);

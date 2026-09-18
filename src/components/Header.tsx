@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, Trash2, Cloud, CloudOff, Settings2, Download } from 'lucide-react';
+import { ChevronDown, Trash2, Cloud, CloudOff, Settings2, Download, HelpCircle, Camera } from 'lucide-react';
 
 interface HeaderProps {
   currentYear: number;
@@ -7,6 +7,9 @@ interface HeaderProps {
   onOpenReport: () => void;
   onOpenReset: () => void;
   onOpenSettings: () => void;
+  onOpenHowToUse?: () => void;
+  onOpenFacePunch?: () => void;
+  enableFacePunch?: boolean;
   isOnline: boolean;
   pendingSync: boolean;
   onInstallPWA?: () => void;
@@ -19,6 +22,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenReport,
   onOpenReset,
   onOpenSettings,
+  onOpenHowToUse,
+  onOpenFacePunch,
+  enableFacePunch = true,
   isOnline,
   pendingSync,
   onInstallPWA,
@@ -60,18 +66,45 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Right Icons: Install (if available), Report, Settings/Sync, Trash */}
-      <div className="flex items-center gap-2 sm:gap-2.5">
+      {/* Right Icons: Install (if available), Face Punch, How to Use, Report, Settings/Sync, Trash */}
+      <div className="flex items-center gap-1.5 sm:gap-2">
         {/* PWA Install Button in Header */}
         {isInstallable && onInstallPWA && (
           <button
             id="btn-header-install-pwa"
             onClick={onInstallPWA}
             title="Install App on Phone"
-            className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-xs font-bold shadow-xs active:scale-95 transition cursor-pointer"
+            className="flex items-center gap-1 px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-xs font-bold shadow-xs active:scale-95 transition cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
             <span className="hidden xs:inline">Install</span>
+          </button>
+        )}
+
+        {/* Optional Face Punch Button */}
+        {enableFacePunch && onOpenFacePunch && (
+          <button
+            id="btn-open-face-punch"
+            onClick={onOpenFacePunch}
+            title="Face Punch Duty Verification (Optional)"
+            className="flex items-center gap-1 px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-md text-xs font-bold shadow-xs active:scale-95 transition cursor-pointer"
+            aria-label="Face Punch"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span className="hidden xs:inline">Punch</span>
+          </button>
+        )}
+
+        {/* How to Use Guide Button */}
+        {onOpenHowToUse && (
+          <button
+            id="btn-open-how-to-use"
+            onClick={onOpenHowToUse}
+            title="How to Use Guide"
+            className="p-1.5 rounded-md hover:bg-[#2f333a] active:scale-90 transition text-amber-300 hover:text-amber-200 cursor-pointer"
+            aria-label="How to Use"
+          >
+            <HelpCircle className="w-5 h-5" />
           </button>
         )}
 
@@ -80,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({
           id="btn-open-report"
           onClick={onOpenReport}
           title="Monthly Report & Dashboard"
-          className="p-1.5 rounded-md hover:bg-[#2f333a] active:scale-90 transition text-gray-200 hover:text-white"
+          className="p-1.5 rounded-md hover:bg-[#2f333a] active:scale-90 transition text-gray-200 hover:text-white cursor-pointer"
           aria-label="Monthly Report"
         >
           {/* Custom multi-color bar chart icon matching screenshot */}

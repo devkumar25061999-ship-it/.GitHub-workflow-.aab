@@ -14,6 +14,10 @@ export interface DayRecord {
   date: string; // 'YYYY-MM-DD'
   status: AttendanceStatus;
   overtimeHours: number;
+  inTime?: string;
+  outTime?: string;
+  punchMethod?: 'manual' | 'face_punch';
+  faceSnapshot?: string;
   notes?: string;
   updatedAt: number;
 }
@@ -43,6 +47,11 @@ export interface AppSettings {
   currency: string;
   companyName: string;
   employeeName: string;
+  employeeId?: string;
+  department?: string;
+  defaultShiftIn?: string;
+  defaultShiftOut?: string;
+  enableFacePunch?: boolean;
   admobAppId?: string;
   admobBannerId?: string;
   admobInterstitialId?: string;

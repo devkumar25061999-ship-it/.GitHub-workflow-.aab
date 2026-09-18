@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Download, Copy, Check, Printer, DollarSign, BarChart2 } from 'lucide-react';
+import { X, Download, Copy, Check, Printer, DollarSign, BarChart2, FileSpreadsheet } from 'lucide-react';
 import { MonthlySummary, AttendanceDatabase, AppSettings } from '../types';
-import { generateMonthlyTextReport, downloadMonthlyCSV } from '../utils/export';
+import { generateMonthlyTextReport } from '../utils/export';
+import { downloadHRCSV, downloadHRExcelFile, printHRTimesheet } from '../utils/hrExport';
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -37,18 +38,15 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   };
 
   const handleDownloadCSV = () => {
-    downloadMonthlyCSV(
-      records,
-      summary.year,
-      summary.month,
-      summary.monthName,
-      summary,
-      settings
-    );
+    downloadHRCSV(summary, records, settings);
+  };
+
+  const handleDownloadExcel = () => {
+    downloadHRExcelFile(summary, records, settings);
   };
 
   const handlePrint = () => {
-    window.print();
+    printHRTimesheet(summary, records, settings);
   };
 
   // Salary calculations
@@ -304,36 +302,53 @@ export const ReportModal: React.FC<ReportModalProps> = ({
         </div>
 
         {/* Footer Actions: Export, Copy, Print */}
-        <div className="bg-gray-50 border-t border-gray-200 p-3 sm:p-4 flex flex-col sm:flex-row gap-2">
-          {/* Download CSV Button */}
-          <button
-            id="btn-export-csv"
-            onClick={handleDownloadCSV}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 active:scale-98 text-white font-bold py-2.5 px-3 rounded-xl text-xs sm:text-sm shadow-xs transition cursor-pointer"
-          >
-            <Download className="w-4 h-4" />
-            <span>Export CSV</span>
-          </button>
+        <div className="bg-gray-50 border-t border-gray-200 p-3 sm:p-4 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            {/* Download HR Excel (.xls) Button */}
+            <button
+              id="btn-export-hr-excel"
+              onClick={handleDownloadExcel}
+              className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-emerald-700 to-emerald-600 hover:from-emerald-800 hover:to-emerald-700 active:scale-98 text-white font-bold py-2.5 px-3 rounded-xl text-xs sm:text-sm shadow-xs transition cursor-pointer"
+              title="Download formatted Corporate HR Muster Roll in Excel format"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
+              <span>HR Excel (.xls)</span>
+            </button>
 
-          {/* Copy Report Button */}
-          <button
-            id="btn-copy-report"
-            onClick={handleCopyText}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-bold py-2.5 px-3 rounded-xl text-xs sm:text-sm shadow-xs transition cursor-pointer"
-          >
-            {copied ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
-            <span>{copied ? 'Copied!' : 'Copy Summary'}</span>
-          </button>
+            {/* Download HR CSV Button */}
+            <button
+              id="btn-export-hr-csv"
+              onClick={handleDownloadCSV}
+              className="flex items-center justify-center gap-1.5 bg-teal-700 hover:bg-teal-800 active:scale-98 text-white font-bold py-2.5 px-3 rounded-xl text-xs sm:text-sm shadow-xs transition cursor-pointer"
+              title="Download standard HR CSV timesheet"
+            >
+              <Download className="w-4 h-4 text-teal-200" />
+              <span>HR CSV</span>
+            </button>
+          </div>
 
-          {/* Print Button */}
-          <button
-            id="btn-print-report"
-            onClick={handlePrint}
-            className="flex items-center justify-center gap-1.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2.5 px-3 rounded-xl text-xs sm:text-sm transition cursor-pointer"
-            title="Print Attendance Report"
-          >
-            <Printer className="w-4 h-4" />
-          </button>
+          <div className="flex gap-2">
+            {/* Copy Report Button */}
+            <button
+              id="btn-copy-report"
+              onClick={handleCopyText}
+              className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-bold py-2 px-3 rounded-xl text-xs sm:text-sm shadow-xs transition cursor-pointer"
+            >
+              {copied ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
+              <span>{copied ? 'Copied!' : 'Copy Summary'}</span>
+            </button>
+
+            {/* Print Timesheet Button */}
+            <button
+              id="btn-print-report"
+              onClick={handlePrint}
+              className="flex items-center justify-center gap-1.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 rounded-xl text-xs sm:text-sm transition cursor-pointer"
+              title="Print Official Timesheet / Save PDF"
+            >
+              <Printer className="w-4 h-4" />
+              <span className="hidden sm:inline">Print</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
