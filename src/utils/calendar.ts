@@ -139,8 +139,16 @@ export function calculateMonthlySummary(db: AttendanceDatabase, year: number, mo
   let holidayDays = 0;
   let daysWithOvertime = 0;
   let totalRecordedDays = 0;
+  let totalSundays = 0;
+  let workedSundays = 0;
 
   for (let day = 1; day <= totalDays; day++) {
+    const dateObj = new Date(year, month, day);
+    const isSunday = dateObj.getDay() === 0;
+    if (isSunday) {
+      totalSundays++;
+    }
+
     const dateKey = formatDateString(year, month, day);
     const record = db[dateKey];
     if (record) {
@@ -149,8 +157,10 @@ export function calculateMonthlySummary(db: AttendanceDatabase, year: number, mo
       }
       if (record.status === 'work') {
         workDays++;
+        if (isSunday) workedSundays++;
       } else if (record.status === 'halfday') {
         halfDays++;
+        if (isSunday) workedSundays += 0.5;
       } else if (record.status === 'vacation') {
         vacationDays++;
       } else if (record.status === 'sick') {
@@ -171,6 +181,7 @@ export function calculateMonthlySummary(db: AttendanceDatabase, year: number, mo
   // Prevent floating point inaccuracies (e.g. 0.1 + 0.2)
   overtimeHours = Math.round(overtimeHours * 10) / 10;
   const effectiveWorkDays = Math.round((workDays + halfDays * 0.5) * 10) / 10;
+  const offSundays = Math.max(0, totalSundays - Math.floor(workedSundays));
 
   return {
     year,
@@ -187,5 +198,8 @@ export function calculateMonthlySummary(db: AttendanceDatabase, year: number, mo
     totalDays,
     daysWithOvertime,
     totalRecordedDays,
+    totalSundays,
+    workedSundays,
+    offSundays,
   };
 }

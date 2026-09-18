@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, Trash2, Cloud, CloudOff, Settings2, Download, HelpCircle, Camera } from 'lucide-react';
+import { ChevronDown, Trash2, Cloud, CloudOff, Settings2, Download, HelpCircle } from 'lucide-react';
 
 interface HeaderProps {
   currentYear: number;
@@ -8,8 +8,6 @@ interface HeaderProps {
   onOpenReset: () => void;
   onOpenSettings: () => void;
   onOpenHowToUse?: () => void;
-  onOpenFacePunch?: () => void;
-  enableFacePunch?: boolean;
   isOnline: boolean;
   pendingSync: boolean;
   onInstallPWA?: () => void;
@@ -23,8 +21,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenReset,
   onOpenSettings,
   onOpenHowToUse,
-  onOpenFacePunch,
-  enableFacePunch = true,
   isOnline,
   pendingSync,
   onInstallPWA,
@@ -66,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Right Icons: Install (if available), Face Punch, How to Use, Report, Settings/Sync, Trash */}
+      {/* Right Icons: Install (if available), How to Use, Report, Settings/Sync, Trash */}
       <div className="flex items-center gap-1.5 sm:gap-2">
         {/* PWA Install Button in Header */}
         {isInstallable && onInstallPWA && (
@@ -78,20 +74,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Download className="w-3.5 h-3.5" />
             <span className="hidden xs:inline">Install</span>
-          </button>
-        )}
-
-        {/* Optional Face Punch Button */}
-        {enableFacePunch && onOpenFacePunch && (
-          <button
-            id="btn-open-face-punch"
-            onClick={onOpenFacePunch}
-            title="Face Punch Duty Verification (Optional)"
-            className="flex items-center gap-1 px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-md text-xs font-bold shadow-xs active:scale-95 transition cursor-pointer"
-            aria-label="Face Punch"
-          >
-            <Camera className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline">Punch</span>
           </button>
         )}
 

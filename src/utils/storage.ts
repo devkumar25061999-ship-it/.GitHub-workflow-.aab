@@ -14,7 +14,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
   department: 'Operations',
   defaultShiftIn: '09:00',
   defaultShiftOut: '18:00',
+  shiftHours: 8,
   enableFacePunch: true, // Enabled by default so user can immediately see & test, optional toggle in settings
+  // Duty Settings (Requested: Sunday Off/On, Holiday Pay counted in Salary)
+  sundayWeeklyOff: true, // Sunday is weekly off
+  paidSundays: false, // Set to true if company pays for Sunday off
+  paidHolidays: true, // "Hollyday ka paisa do company deti hai use sallry mein count karo"
+  paidSickLeave: false,
   admobAppId: 'ca-app-pub-2133508635089094~1211511400',
   admobBannerId: 'ca-app-pub-2133508635089094/7668217896',
   admobInterstitialId: 'ca-app-pub-3940256099942544/1033173712',

@@ -39,6 +39,9 @@ export interface MonthlySummary {
   totalDays: number;
   daysWithOvertime: number;
   totalRecordedDays: number;
+  totalSundays?: number;
+  workedSundays?: number;
+  offSundays?: number;
 }
 
 export interface AppSettings {
@@ -51,7 +54,15 @@ export interface AppSettings {
   department?: string;
   defaultShiftIn?: string;
   defaultShiftOut?: string;
+  shiftHours?: number;
   enableFacePunch?: boolean;
+
+  // Duty Settings (Requested by user)
+  sundayWeeklyOff?: boolean; // Sunday off ya on (default: true)
+  paidSundays?: boolean; // Sunday ka paisa count karein ya nahi (default: false)
+  paidHolidays?: boolean; // Company holiday ka paisa deti hai - salary me count karein (default: true)
+  paidSickLeave?: boolean; // Sick leave payment toggle (default: false)
+
   admobAppId?: string;
   admobBannerId?: string;
   admobInterstitialId?: string;

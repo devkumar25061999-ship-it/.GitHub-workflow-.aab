@@ -30,14 +30,22 @@ export function downloadHRCSV(
   lines.push('');
 
   // 3. Executive HR Summary Block
-  const baseSalary = summary.effectiveWorkDays * (settings.dailyWage || 0);
+  const isPaidHolidays = settings.paidHolidays !== false;
+  const isPaidSundays = settings.sundayWeeklyOff !== false && settings.paidSundays === true;
+  const paidHolidayDays = isPaidHolidays ? (summary.holidayDays || 0) : 0;
+  const paidSundayDays = isPaidSundays ? (summary.offSundays || 0) : 0;
+  const totalPaidDays = summary.effectiveWorkDays + paidHolidayDays + paidSundayDays;
+
+  const dailyWage = settings.dailyWage || 0;
+  const baseSalary = totalPaidDays * dailyWage;
   const otEarnings = summary.overtimeHours * (settings.hourlyOvertimeRate || 0);
   const grossPay = baseSalary + otEarnings;
 
   lines.push('"MONTHLY EXECUTIVE SUMMARY"');
   lines.push(`"Total Calendar Days:","${daysInMonth}","Present Full Duty:","${summary.workDays} days"`);
-  lines.push(`"Half Days:","${summary.halfDays} days","Effective Duty Days:","${summary.effectiveWorkDays} days"`);
-  lines.push(`"Total Overtime:","${summary.overtimeHours} hrs","Paid Holidays:","${summary.holidayDays} days"`);
+  lines.push(`"Half Days:","${summary.halfDays} days","Effective Work Duty:","${summary.effectiveWorkDays} days"`);
+  lines.push(`"Paid Holidays:","${summary.holidayDays} days (${isPaidHolidays ? 'Counted in Salary' : 'Unpaid'})","Total Paid Days:","${totalPaidDays} days"`);
+  lines.push(`"Total Overtime:","${summary.overtimeHours} hrs","Overtime Earnings:","${settings.currency || '₹'}${otEarnings.toLocaleString('en-IN')}"`);
   lines.push(`"Sick Leave:","${summary.sickDays} days","Vacation / Privilege:","${summary.vacationDays} days"`);
   lines.push(`"Emergency Leave:","${summary.emergencyDays} days","Estimated Gross Pay:","${settings.currency || '₹'}${grossPay.toLocaleString('en-IN')}"`);
   lines.push('');
@@ -99,7 +107,14 @@ export function downloadHRExcelFile(
   const monthName = MONTH_NAMES[month];
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const baseSalary = summary.effectiveWorkDays * (settings.dailyWage || 0);
+  const isPaidHolidays = settings.paidHolidays !== false;
+  const isPaidSundays = settings.sundayWeeklyOff !== false && settings.paidSundays === true;
+  const paidHolidayDays = isPaidHolidays ? (summary.holidayDays || 0) : 0;
+  const paidSundayDays = isPaidSundays ? (summary.offSundays || 0) : 0;
+  const totalPaidDays = summary.effectiveWorkDays + paidHolidayDays + paidSundayDays;
+
+  const dailyWage = settings.dailyWage || 0;
+  const baseSalary = totalPaidDays * dailyWage;
   const otEarnings = summary.overtimeHours * (settings.hourlyOvertimeRate || 0);
   const grossPay = baseSalary + otEarnings;
 
@@ -318,7 +333,14 @@ export function printHRTimesheet(
     return;
   }
 
-  const baseSalary = summary.effectiveWorkDays * (settings.dailyWage || 0);
+  const isPaidHolidays = settings.paidHolidays !== false;
+  const isPaidSundays = settings.sundayWeeklyOff !== false && settings.paidSundays === true;
+  const paidHolidayDays = isPaidHolidays ? (summary.holidayDays || 0) : 0;
+  const paidSundayDays = isPaidSundays ? (summary.offSundays || 0) : 0;
+  const totalPaidDays = summary.effectiveWorkDays + paidHolidayDays + paidSundayDays;
+
+  const dailyWage = settings.dailyWage || 0;
+  const baseSalary = totalPaidDays * dailyWage;
   const otEarnings = summary.overtimeHours * (settings.hourlyOvertimeRate || 0);
   const grossPay = baseSalary + otEarnings;
 

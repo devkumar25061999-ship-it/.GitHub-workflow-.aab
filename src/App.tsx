@@ -31,7 +31,8 @@ import { AdMobBanner } from './components/AdMobBanner';
 import { AppOpenAdModal } from './components/AppOpenAdModal';
 import { HowToUseModal } from './components/HowToUseModal';
 import { FacePunchModal } from './components/FacePunchModal';
-import { Camera, HelpCircle, FileSpreadsheet } from 'lucide-react';
+import { DutySettingModal } from './components/DutySettingModal';
+import { Camera, HelpCircle, SlidersHorizontal } from 'lucide-react';
 
 export default function App() {
   // Initial state defaults to September 2026 matching user's uploaded screenshots
@@ -58,6 +59,7 @@ export default function App() {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState<boolean>(false);
   const [isHowToUseOpen, setIsHowToUseOpen] = useState<boolean>(false);
   const [isFacePunchOpen, setIsFacePunchOpen] = useState<boolean>(false);
+  const [isDutySettingOpen, setIsDutySettingOpen] = useState<boolean>(false);
   const [overtimeModalDate, setOvertimeModalDate] = useState<string | null>(null);
   const [detailModalDate, setDetailModalDate] = useState<string | null>(null);
   const [isAppOpenAdActive, setIsAppOpenAdActive] = useState<boolean>(false);
@@ -389,8 +391,6 @@ export default function App() {
               setIsSettingsOpen(true);
             }}
             onOpenHowToUse={() => setIsHowToUseOpen(true)}
-            onOpenFacePunch={() => setIsFacePunchOpen(true)}
-            enableFacePunch={settings.enableFacePunch !== false}
             isOnline={isOnline}
             pendingSync={pendingSync}
             onInstallPWA={install}
@@ -409,7 +409,7 @@ export default function App() {
           onNextMonth={handleNextMonth}
         />
 
-        {/* Prominent Quick Action Bar for Face Punch, How to Use & HR Excel */}
+        {/* Prominent Quick Action Bar for Face Punch, Guide & Duty Setting */}
         <div className="w-full px-3 py-1 flex items-center gap-2">
           {settings.enableFacePunch !== false && (
             <button
@@ -434,13 +434,13 @@ export default function App() {
           </button>
 
           <button
-            id="btn-prominent-hr-excel"
-            onClick={() => setIsReportOpen(true)}
-            className="py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl shadow-xs text-xs font-black flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
-            title="Download HR Excel / CSV Report"
+            id="btn-prominent-duty-settings"
+            onClick={() => setIsDutySettingOpen(true)}
+            className="py-2 px-3 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white rounded-xl shadow-xs text-xs font-black flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
+            title="Duty Settings: Sunday off/on, Holiday salary count & Shift timing"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-200 shrink-0" />
-            <span>HR Report</span>
+            <SlidersHorizontal className="w-4 h-4 text-blue-200 shrink-0" />
+            <span>Duty Setting</span>
           </button>
         </div>
 
@@ -595,6 +595,17 @@ export default function App() {
         onPunchSuccess={handleFacePunchSuccess}
         defaultShiftIn={settings.defaultShiftIn}
         defaultShiftOut={settings.defaultShiftOut}
+      />
+
+      {/* 11. Duty Setting Modal (Sunday Off/On, Paid Holiday Salary, Shift Hours) */}
+      <DutySettingModal
+        isOpen={isDutySettingOpen}
+        onClose={() => setIsDutySettingOpen(false)}
+        settings={settings}
+        onSaveSettings={handleSaveSettings}
+        currentMonthName={summary.monthName}
+        holidayDaysCount={summary.holidayDays}
+        totalSundaysCount={summary.totalSundays}
       />
     </div>
   );

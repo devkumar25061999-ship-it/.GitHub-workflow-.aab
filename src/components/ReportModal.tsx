@@ -49,9 +49,25 @@ export const ReportModal: React.FC<ReportModalProps> = ({
     printHRTimesheet(summary, records, settings);
   };
 
-  // Salary calculations
+  // Salary calculations with Duty Settings (Holiday Pay & Sunday Rules)
+  const isPaidHolidays = settings.paidHolidays !== false;
+  const isPaidSundays = settings.sundayWeeklyOff !== false && settings.paidSundays === true;
+  const isPaidSick = settings.paidSickLeave === true;
+
   const effectiveDays = summary.effectiveWorkDays ?? (summary.workDays + (summary.halfDays || 0) * 0.5);
-  const baseSalary = effectiveDays * (settings.dailyWage || 0);
+  const paidHolidayDays = isPaidHolidays ? (summary.holidayDays || 0) : 0;
+  const paidSundayDays = isPaidSundays ? (summary.offSundays || 0) : 0;
+  const paidSickDays = isPaidSick ? (summary.sickDays || 0) : 0;
+
+  const totalPaidDays = effectiveDays + paidHolidayDays + paidSundayDays + paidSickDays;
+
+  const dailyWage = settings.dailyWage || 0;
+  const workPay = effectiveDays * dailyWage;
+  const holidayPay = paidHolidayDays * dailyWage;
+  const sundayPay = paidSundayDays * dailyWage;
+  const sickPay = paidSickDays * dailyWage;
+  const baseSalary = totalPaidDays * dailyWage;
+
   const overtimeSalary = summary.overtimeHours * (settings.hourlyOvertimeRate || 0);
   const totalEstimatedEarnings = baseSalary + overtimeSalary;
 
@@ -166,24 +182,49 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
                 <div className="flex items-center justify-between py-1">
                   <span className="flex items-center gap-2">
-                    <span>🎉</span> Holiday:
+                    <span>🎉</span> Holiday (छुट्टी):
                   </span>
-                  <span className="font-bold text-orange-600">{summary.holidayDays} Days</span>
+                  <div className="text-right">
+                    <span className="font-bold text-orange-600">{summary.holidayDays} Days</span>
+                    {isPaidHolidays && summary.holidayDays > 0 && (
+                      <span className="ml-2 text-xs text-emerald-700 font-bold bg-emerald-100 px-1.5 py-0.5 rounded">
+                        Paid (+{settings.currency}{holidayPay.toLocaleString()})
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Earnings Quick Peek if configured */}
               {totalEstimatedEarnings > 0 && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-emerald-800 font-semibold block">Total Estimated Earnings</span>
-                    <span className="text-lg font-black text-emerald-950">
-                      {settings.currency} {totalEstimatedEarnings.toLocaleString()}
+                <div className="p-3.5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs text-emerald-800 font-semibold block">Total Estimated Earnings (कुल वेतन)</span>
+                      <span className="text-xl font-black text-emerald-950">
+                        {settings.currency} {totalEstimatedEarnings.toLocaleString()}
+                      </span>
+                    </div>
+                    <span className="text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-lg font-bold shadow-xs">
+                      {totalPaidDays} Paid Days + {summary.overtimeHours}h OT
                     </span>
                   </div>
-                  <span className="text-xs bg-emerald-200/80 text-emerald-900 px-2 py-1 rounded-md font-bold">
-                    {effectiveDays}d Work + {summary.overtimeHours}h OT
-                  </span>
+
+                  {/* Clarification of Holiday and Overtime included in salary */}
+                  <div className="text-[11px] text-emerald-800 pt-1 border-t border-emerald-200/70 flex flex-wrap gap-x-3 gap-y-0.5">
+                    <span>Work: {settings.currency}{workPay.toLocaleString()}</span>
+                    {isPaidHolidays && summary.holidayDays > 0 && (
+                      <span className="font-bold text-emerald-900">
+                        • Holiday Pay: {settings.currency}{holidayPay.toLocaleString()} ({summary.holidayDays}d)
+                      </span>
+                    )}
+                    {isPaidSundays && paidSundayDays > 0 && (
+                      <span>• Sunday Pay: {settings.currency}{sundayPay.toLocaleString()}</span>
+                    )}
+                    {overtimeSalary > 0 && (
+                      <span>• Overtime: {settings.currency}{overtimeSalary.toLocaleString()}</span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -219,17 +260,43 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                 <div className="text-xs space-y-1.5 pt-1 text-gray-700">
                   <div className="flex justify-between">
                     <span>
-                      Base Work Pay ({effectiveDays} days × {settings.currency}{settings.dailyWage})
+                      Duty Work Pay ({effectiveDays} days × {settings.currency}{settings.dailyWage})
                       {summary.halfDays > 0 ? ` [${summary.workDays} Full + ${summary.halfDays} Half]` : ''}:
                     </span>
-                    <span className="font-semibold">{settings.currency} {baseSalary.toLocaleString()}</span>
+                    <span className="font-semibold">{settings.currency} {workPay.toLocaleString()}</span>
                   </div>
+
+                  {isPaidHolidays && summary.holidayDays > 0 && (
+                    <div className="flex justify-between text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.5 rounded">
+                      <span>🎉 Holiday Pay ({summary.holidayDays} holidays × {settings.currency}{settings.dailyWage}):</span>
+                      <span>+{settings.currency} {holidayPay.toLocaleString()}</span>
+                    </div>
+                  )}
+
+                  {isPaidSundays && paidSundayDays > 0 && (
+                    <div className="flex justify-between text-blue-800 font-semibold bg-blue-50 px-2 py-0.5 rounded">
+                      <span>🏖️ Sunday Off Pay ({paidSundayDays} Sundays × {settings.currency}{settings.dailyWage}):</span>
+                      <span>+{settings.currency} {sundayPay.toLocaleString()}</span>
+                    </div>
+                  )}
+
+                  {isPaidSick && paidSickDays > 0 && (
+                    <div className="flex justify-between text-indigo-800 font-semibold bg-indigo-50 px-2 py-0.5 rounded">
+                      <span>💊 Sick Leave Pay ({paidSickDays} days × {settings.currency}{settings.dailyWage}):</span>
+                      <span>+{settings.currency} {sickPay.toLocaleString()}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between">
                     <span>Overtime Pay ({summary.overtimeHours} hrs × {settings.currency}{settings.hourlyOvertimeRate}):</span>
                     <span className="font-semibold text-emerald-700">{settings.currency} {overtimeSalary.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between border-t pt-1.5 font-bold text-sm text-gray-900">
-                    <span>Net Total:</span>
+
+                  <div className="flex justify-between border-t pt-2 font-bold text-sm text-gray-900">
+                    <div>
+                      <span>Net Total Pay ({totalPaidDays} paid days):</span>
+                      <span className="text-[10px] text-gray-500 block font-normal">Work + Holidays + Overtime</span>
+                    </div>
                     <span className="text-emerald-700 text-base">{settings.currency} {totalEstimatedEarnings.toLocaleString()}</span>
                   </div>
                 </div>
