@@ -18,6 +18,8 @@ import {
   Database,
   HelpCircle,
   Package,
+  Share2,
+  HeartHandshake,
 } from 'lucide-react';
 import { AppSettings, AttendanceDatabase } from '../types';
 import { exportBackupJSON, importBackupJSON } from '../utils/storage';
@@ -35,6 +37,7 @@ interface SettingsAndSyncModalProps {
   onInstallPWA?: () => void;
   isInstallable?: boolean;
   onOpenPrivacy?: () => void;
+  onOpenRefer?: () => void;
   onTestAppOpenAd?: () => void;
   initialTab?: 'general' | 'admob' | 'backup' | 'apk';
 }
@@ -52,6 +55,7 @@ export const SettingsAndSyncModal: React.FC<SettingsAndSyncModalProps> = ({
   onInstallPWA,
   isInstallable,
   onOpenPrivacy,
+  onOpenRefer,
   onTestAppOpenAd,
   initialTab = 'general',
 }) => {
@@ -341,6 +345,30 @@ export const SettingsAndSyncModal: React.FC<SettingsAndSyncModalProps> = ({
                     : '✗ Disabled: Normal 1-tap calendar mode active rahega'}
                 </span>
               </div>
+
+              {/* Refer to Friend Action Card */}
+              {onOpenRefer && (
+                <div className="p-3 bg-gradient-to-r from-teal-50 via-emerald-50 to-teal-50 border border-emerald-300 rounded-xl flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <Share2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-black text-emerald-950 block">Refer to Friend (दोस्तों को शेयर करें)</span>
+                      <span className="text-[11px] text-emerald-800">
+                        Greeting message व सभी features के साथ WhatsApp या अन्य ऐप्स पर शेयर करें
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onOpenRefer}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold cursor-pointer shrink-0 shadow-xs flex items-center gap-1 active:scale-95 transition"
+                  >
+                    <span>Share</span>
+                  </button>
+                </div>
+              )}
 
               {/* Install PWA Prompt if applicable */}
               {isInstallable && onInstallPWA && (

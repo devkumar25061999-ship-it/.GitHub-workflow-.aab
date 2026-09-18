@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, Trash2, Cloud, CloudOff, Settings2, Download, HelpCircle } from 'lucide-react';
+import { ChevronDown, Trash2, Cloud, CloudOff, Settings2, Download, HelpCircle, Share2 } from 'lucide-react';
 
 interface HeaderProps {
   currentYear: number;
@@ -8,6 +8,7 @@ interface HeaderProps {
   onOpenReset: () => void;
   onOpenSettings: () => void;
   onOpenHowToUse?: () => void;
+  onOpenRefer?: () => void;
   isOnline: boolean;
   pendingSync: boolean;
   onInstallPWA?: () => void;
@@ -21,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenReset,
   onOpenSettings,
   onOpenHowToUse,
+  onOpenRefer,
   isOnline,
   pendingSync,
   onInstallPWA,
@@ -29,33 +31,33 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header
       id="app-header"
-      className="bg-[#1e2024] text-white px-4 py-3 flex items-center justify-between shadow-md select-none border-b border-gray-800"
+      className="bg-[#1e2024] text-white px-2.5 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between shadow-md select-none border-b border-gray-800 gap-1.5 sm:gap-3"
     >
-      {/* Left: Year dropdown button matching screenshot */}
+      {/* Left: Year dropdown button positioned neatly on the far left */}
       <button
         id="btn-year-selector"
         onClick={onOpenYearPicker}
-        className="flex items-center gap-2 bg-[#2a2d33] hover:bg-[#34383f] text-[#facc15] font-bold text-xl px-3.5 py-1.5 rounded-lg border border-gray-700 active:scale-95 transition cursor-pointer"
+        className="shrink-0 flex items-center gap-1.5 bg-[#2a2d33] hover:bg-[#34383f] text-[#facc15] font-black text-base sm:text-lg px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-700 active:scale-95 transition cursor-pointer"
         aria-label="Select Year"
       >
         <span>{currentYear}</span>
-        <ChevronDown className="w-5 h-5 text-[#facc15]" />
+        <ChevronDown className="w-4 h-4 text-[#facc15]" />
       </button>
 
       {/* Center: Title & Offline indicator */}
-      <div className="flex flex-col items-center">
-        <span className="font-extrabold text-sm sm:text-base tracking-wide text-gray-100 flex items-center gap-1.5">
+      <div className="flex flex-col items-center justify-center min-w-0 px-1 text-center">
+        <span className="font-black text-xs sm:text-sm tracking-wide text-gray-100 flex items-center gap-1 whitespace-nowrap">
           Attendance<span className="text-emerald-400 font-black">+</span>
         </span>
-        <div className="flex items-center gap-1 text-[11px] text-gray-400">
+        <div className="flex items-center gap-1 text-[10px] text-gray-400">
           {isOnline ? (
-            <span className="inline-flex items-center gap-1 text-emerald-400 font-medium">
-              <Cloud className="w-3 h-3" />
+            <span className="inline-flex items-center gap-1 text-emerald-400 font-medium whitespace-nowrap">
+              <Cloud className="w-2.5 h-2.5" />
               {pendingSync ? 'Syncing...' : 'Offline Ready'}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-amber-400 font-medium">
-              <CloudOff className="w-3 h-3" />
+            <span className="inline-flex items-center gap-1 text-amber-400 font-medium whitespace-nowrap">
+              <CloudOff className="w-2.5 h-2.5" />
               Offline Mode
             </span>
           )}
@@ -63,7 +65,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right Icons: Install (if available), How to Use, Report, Settings/Sync, Trash */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
+      <div className="flex items-center gap-0.5 sm:gap-1.5 shrink-0">
         {/* PWA Install Button in Header */}
         {isInstallable && onInstallPWA && (
           <button
@@ -105,6 +107,19 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="w-1.5 h-5 bg-sky-400 rounded-sm"></span>
           </div>
         </button>
+
+        {/* Refer / Share to Friend Button */}
+        {onOpenRefer && (
+          <button
+            id="btn-header-refer-friend"
+            onClick={onOpenRefer}
+            title="Refer to Friend (दोस्तों को शेयर करें)"
+            className="p-1.5 rounded-md hover:bg-[#2f333a] active:scale-90 transition text-emerald-400 hover:text-emerald-300 cursor-pointer"
+            aria-label="Refer to Friend"
+          >
+            <Share2 className="w-5 h-5" />
+          </button>
+        )}
 
         {/* Settings & Backup/Sync */}
         <button

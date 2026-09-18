@@ -32,7 +32,8 @@ import { AppOpenAdModal } from './components/AppOpenAdModal';
 import { HowToUseModal } from './components/HowToUseModal';
 import { FacePunchModal } from './components/FacePunchModal';
 import { DutySettingModal } from './components/DutySettingModal';
-import { Camera, HelpCircle, SlidersHorizontal } from 'lucide-react';
+import { ReferModal } from './components/ReferModal';
+import { Camera, HelpCircle, SlidersHorizontal, Share2 } from 'lucide-react';
 
 export default function App() {
   // Initial state defaults to September 2026 matching user's uploaded screenshots
@@ -60,6 +61,7 @@ export default function App() {
   const [isHowToUseOpen, setIsHowToUseOpen] = useState<boolean>(false);
   const [isFacePunchOpen, setIsFacePunchOpen] = useState<boolean>(false);
   const [isDutySettingOpen, setIsDutySettingOpen] = useState<boolean>(false);
+  const [isReferOpen, setIsReferOpen] = useState<boolean>(false);
   const [overtimeModalDate, setOvertimeModalDate] = useState<string | null>(null);
   const [detailModalDate, setDetailModalDate] = useState<string | null>(null);
   const [isAppOpenAdActive, setIsAppOpenAdActive] = useState<boolean>(false);
@@ -372,7 +374,7 @@ export default function App() {
   return (
     <div
       id="app-root"
-      className="min-h-screen bg-[#fcf8d8] flex flex-col items-center justify-between font-sans text-gray-900 selection:bg-blue-200"
+      className="min-h-screen min-h-[100dvh] bg-[#fcf8d8] flex flex-col items-center justify-between font-sans text-gray-900 selection:bg-blue-200 overscroll-none"
     >
       {/* Offline Status Banner */}
       <OfflineBanner isOnline={isOnline} />
@@ -391,6 +393,7 @@ export default function App() {
               setIsSettingsOpen(true);
             }}
             onOpenHowToUse={() => setIsHowToUseOpen(true)}
+            onOpenRefer={() => setIsReferOpen(true)}
             isOnline={isOnline}
             pendingSync={pendingSync}
             onInstallPWA={install}
@@ -479,6 +482,14 @@ export default function App() {
           <span>Attendance Plus v1.0.0</span>
           <span>•</span>
           <button
+            onClick={() => setIsReferOpen(true)}
+            className="hover:text-emerald-700 text-emerald-800 font-bold flex items-center gap-1 cursor-pointer"
+          >
+            <Share2 className="w-3 h-3 text-emerald-600" />
+            <span>Refer to Friend</span>
+          </button>
+          <span>•</span>
+          <button
             onClick={() => setIsPrivacyOpen(true)}
             className="hover:text-gray-900 underline font-medium cursor-pointer"
           >
@@ -555,6 +566,10 @@ export default function App() {
         onInstallPWA={install}
         isInstallable={isInstallable}
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
+        onOpenRefer={() => {
+          setIsSettingsOpen(false);
+          setIsReferOpen(true);
+        }}
         onTestAppOpenAd={() => setIsAppOpenAdActive(true)}
       />
 
@@ -606,6 +621,12 @@ export default function App() {
         currentMonthName={summary.monthName}
         holidayDaysCount={summary.holidayDays}
         totalSundaysCount={summary.totalSundays}
+      />
+
+      {/* 12. Refer to Friend Modal (Google Play & AdMob Policy Compliant) */}
+      <ReferModal
+        isOpen={isReferOpen}
+        onClose={() => setIsReferOpen(false)}
       />
     </div>
   );
