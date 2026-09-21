@@ -38,6 +38,36 @@ jobs:
           npx cap add android || true
           npx cap sync android
 
+      - name: Generate Android App Launcher Icons from SVG
+        run: |
+          sudo apt-get update && sudo apt-get install -y librsvg2-bin
+          
+          # Render PWA PNGs in workspace and output folder
+          rsvg-convert -w 192 -h 192 public/icon.svg -o public/pwa-192x192.png
+          rsvg-convert -w 512 -h 512 public/icon.svg -o public/pwa-512x512.png
+          mkdir -p dist/
+          cp public/pwa-192x192.png dist/pwa-192x192.png
+          cp public/pwa-512x512.png dist/pwa-512x512.png
+          
+          # Replace default Capacitor android mipmap launcher icons with user's customized icon
+          RES_DIR="android/app/src/main/res"
+          if [ -d "$RES_DIR" ]; then
+            rsvg-convert -w 48 -h 48 public/icon.svg -o "$RES_DIR/mipmap-mdpi/ic_launcher.png"
+            rsvg-convert -w 48 -h 48 public/icon.svg -o "$RES_DIR/mipmap-mdpi/ic_launcher_round.png"
+            
+            rsvg-convert -w 72 -h 72 public/icon.svg -o "$RES_DIR/mipmap-hdpi/ic_launcher.png"
+            rsvg-convert -w 72 -h 72 public/icon.svg -o "$RES_DIR/mipmap-hdpi/ic_launcher_round.png"
+            
+            rsvg-convert -w 96 -h 96 public/icon.svg -o "$RES_DIR/mipmap-xhdpi/ic_launcher.png"
+            rsvg-convert -w 96 -h 96 public/icon.svg -o "$RES_DIR/mipmap-xhdpi/ic_launcher_round.png"
+            
+            rsvg-convert -w 144 -h 144 public/icon.svg -o "$RES_DIR/mipmap-xxhdpi/ic_launcher.png"
+            rsvg-convert -w 144 -h 144 public/icon.svg -o "$RES_DIR/mipmap-xxhdpi/ic_launcher_round.png"
+            
+            rsvg-convert -w 192 -h 192 public/icon.svg -o "$RES_DIR/mipmap-xxxhdpi/ic_launcher.png"
+            rsvg-convert -w 192 -h 192 public/icon.svg -o "$RES_DIR/mipmap-xxxhdpi/ic_launcher_round.png"
+          fi
+
       - name: Configure AndroidManifest with AdMob & Permissions
         run: |
           MANIFEST_FILE="android/app/src/main/AndroidManifest.xml"

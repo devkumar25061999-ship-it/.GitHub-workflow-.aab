@@ -16,6 +16,7 @@
     "@capacitor/cli": "^7.0.1",
     "@capacitor/core": "^7.0.1",
     "@capacitor/filesystem": "^7.0.1",
+    "@capacitor/local-notifications": "7.0.1",
     "@capacitor/share": "^7.0.1",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",

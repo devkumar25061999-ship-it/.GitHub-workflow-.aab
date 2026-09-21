@@ -10,8 +10,9 @@ import NotepadEditor from './components/NotepadEditor';
 import QuizEditor from './components/QuizEditor';
 import NotepadListView from './components/NotepadListView';
 import AppIconModal from './components/AppIconModal';
-import { Plus, Check, FileText, Sparkles, X } from 'lucide-react';
+import { Plus, Check, FileText, Sparkles, X, Bell, Volume2 } from 'lucide-react';
 import { LanguageCode, getTranslation } from './utils/translations';
+import { initNotifications, triggerTestNotification, scheduleHourlyAlerts } from './utils/notifications';
 
 export default function App() {
   const [notes, setNotes] = useState<Note[]>(() => loadNotes());
@@ -57,6 +58,11 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('notepad_language', language);
   }, [language]);
+
+  // Initialize offline local notifications on startup
+  useEffect(() => {
+    initNotifications();
+  }, []);
 
   // Sync theme to localStorage and documentElement
   useEffect(() => {

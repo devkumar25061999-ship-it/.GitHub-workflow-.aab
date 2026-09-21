@@ -17,14 +17,18 @@ async function saveOrSharePdf(doc: jsPDF, filename: string) {
       // Get base64 string from doc
       const base64Data = doc.output('datauristring').split(',')[1];
       
+      // 1. Persistently save the PDF file to the device's Documents directory
       const savedFile = await Filesystem.writeFile({
         path: fullFilename,
         data: base64Data,
-        directory: Directory.Cache,
+        directory: Directory.Documents,
         recursive: true
       });
 
-      // Share / Open native Android file sheet
+      // 2. Alert the user that the file was successfully saved to their Documents folder
+      alert(`💾 PDF Saved Successfully!\n\nYour PDF has been saved to your device's "Documents" folder as:\n👉 "${fullFilename}"\n\nClick OK to open the Share / Send menu.`);
+
+      // 3. Share / Open native Android file sheet
       await Share.share({
         title: filename,
         text: `Exported PDF: ${filename}`,
