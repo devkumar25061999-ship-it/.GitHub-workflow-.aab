@@ -69,22 +69,17 @@ jobs:
             rsvg-convert -w 192 -h 192 public/icon.svg -o "$RES_DIR/mipmap-xxxhdpi/ic_launcher_round.png"
 
             # 2. Configure Adaptive Icon Layers (Android 8.0+ Devices)
-            # Create a solid black background layer
-            mkdir -p "$RES_DIR/mipmap-anydpi-v26"
-            cat << 'EOF' > "$RES_DIR/mipmap-anydpi-v26/ic_launcher_background.xml"
+            # Override background color to solid black in values folder to avoid duplicate resource names
+            mkdir -p "$RES_DIR/values"
+            cat << 'EOF' > "$RES_DIR/values/ic_launcher_background.xml"
 <?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path
-        android:fillColor="#000000"
-        android:pathData="M0,0h108v108h-108z"/>
-</vector>
+<resources>
+    <color name="ic_launcher_background">#000000</color>
+</resources>
 EOF
 
-            # Delete default Capacitor blue/white vector foreground icon XML to force Android to fall back to our high-definition PNG foregrounds
+            # Delete default Capacitor blue/white vector foreground drawables so Android falls back to our custom high-definition PNGs
+            rm -f "$RES_DIR/drawable-v24/ic_launcher_foreground.xml"
             rm -f "$RES_DIR/mipmap-anydpi-v26/ic_launcher_foreground.xml"
 
             # 3. Generate Foreground Layers from Padded Transparent SVG (108px - 432px)

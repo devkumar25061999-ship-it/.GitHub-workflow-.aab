@@ -1,0 +1,13 @@
+{
+	"appId": "com.notpad.mcqmaker",
+	"appName": "NOTPAD MCQ MAKER",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	},
+	"plugins": {
+		"AdMob": {
+			"appIdAndroid": "ca-app-pub-3940256099942544~3347511713"
+		}
+	}
+}

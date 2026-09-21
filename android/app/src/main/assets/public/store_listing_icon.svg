@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="1024" height="1024">
+  <!-- Solid Black Squircle Background -->
+  <rect width="512" height="512" rx="112" fill="#000000"/>
+  
+  <!-- Subtle White Border Ring -->
+  <rect x="8" y="8" width="496" height="496" rx="104" fill="none" stroke="#ffffff" stroke-width="4" stroke-opacity="0.15"/>
+  
+  <!-- Notepad Body -->
+  <rect x="96" y="86" width="320" height="340" rx="32" fill="#000000" stroke="#ffffff" stroke-width="18"/>
+  
+  <!-- Notepad Spiral Rings / Binder Holes -->
+  <line x1="150" y1="64" x2="150" y2="108" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  <line x1="210" y1="64" x2="210" y2="108" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  <line x1="270" y1="64" x2="270" y2="108" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  <line x1="330" y1="64" x2="330" y2="108" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+
+  <!-- Notepad Content Lines -->
+  <line x1="140" y1="160" x2="372" y2="160" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>
+  <line x1="140" y1="216" x2="372" y2="216" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>
+  <line x1="140" y1="272" x2="290" y2="272" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>
+  
+  <!-- MCQ Checkmark Badge (Right Bottom) -->
+  <circle cx="340" cy="328" r="54" fill="#ffffff"/>
+  <path d="M316 328L332 344L366 310" fill="none" stroke="#000000" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
