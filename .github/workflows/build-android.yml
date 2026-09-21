@@ -49,46 +49,29 @@ jobs:
           cp public/pwa-192x192.png dist/pwa-192x192.png
           cp public/pwa-512x512.png dist/pwa-512x512.png
           
-          # Replace default Capacitor android mipmap launcher icons with user's customized icon
-          RES_DIR="android/app/src/main/res"
-          if [ -d "$RES_DIR" ]; then
-            # 1. Generate Legacy and Round Launcher Icons (48px - 192px)
-            rsvg-convert -w 48 -h 48 public/icon.svg -o "$RES_DIR/mipmap-mdpi/ic_launcher.png"
-            rsvg-convert -w 48 -h 48 public/icon.svg -o "$RES_DIR/mipmap-mdpi/ic_launcher_round.png"
-            
-            rsvg-convert -w 72 -h 72 public/icon.svg -o "$RES_DIR/mipmap-hdpi/ic_launcher.png"
-            rsvg-convert -w 72 -h 72 public/icon.svg -o "$RES_DIR/mipmap-hdpi/ic_launcher_round.png"
-            
-            rsvg-convert -w 96 -h 96 public/icon.svg -o "$RES_DIR/mipmap-xhdpi/ic_launcher.png"
-            rsvg-convert -w 96 -h 96 public/icon.svg -o "$RES_DIR/mipmap-xhdpi/ic_launcher_round.png"
-            
-            rsvg-convert -w 144 -h 144 public/icon.svg -o "$RES_DIR/mipmap-xxhdpi/ic_launcher.png"
-            rsvg-convert -w 144 -h 144 public/icon.svg -o "$RES_DIR/mipmap-xxhdpi/ic_launcher_round.png"
-            
-            rsvg-convert -w 192 -h 192 public/icon.svg -o "$RES_DIR/mipmap-xxxhdpi/ic_launcher.png"
-            rsvg-convert -w 192 -h 192 public/icon.svg -o "$RES_DIR/mipmap-xxxhdpi/ic_launcher_round.png"
+            # Replace default Capacitor android mipmap launcher icons with user's customized icon
+            RES_DIR="android/app/src/main/res"
+            if [ -d "$RES_DIR" ]; then
+              # 1. Generate Launcher Icons (48px - 192px)
+              rsvg-convert -w 48 -h 48 public/icon.svg -o "$RES_DIR/mipmap-mdpi/ic_launcher.png"
+              rsvg-convert -w 48 -h 48 public/icon.svg -o "$RES_DIR/mipmap-mdpi/ic_launcher_round.png"
+              
+              rsvg-convert -w 72 -h 72 public/icon.svg -o "$RES_DIR/mipmap-hdpi/ic_launcher.png"
+              rsvg-convert -w 72 -h 72 public/icon.svg -o "$RES_DIR/mipmap-hdpi/ic_launcher_round.png"
+              
+              rsvg-convert -w 96 -h 96 public/icon.svg -o "$RES_DIR/mipmap-xhdpi/ic_launcher.png"
+              rsvg-convert -w 96 -h 96 public/icon.svg -o "$RES_DIR/mipmap-xhdpi/ic_launcher_round.png"
+              
+              rsvg-convert -w 144 -h 144 public/icon.svg -o "$RES_DIR/mipmap-xxhdpi/ic_launcher.png"
+              rsvg-convert -w 144 -h 144 public/icon.svg -o "$RES_DIR/mipmap-xxhdpi/ic_launcher_round.png"
+              
+              rsvg-convert -w 192 -h 192 public/icon.svg -o "$RES_DIR/mipmap-xxxhdpi/ic_launcher.png"
+              rsvg-convert -w 192 -h 192 public/icon.svg -o "$RES_DIR/mipmap-xxxhdpi/ic_launcher_round.png"
 
-            # 2. Configure Adaptive Icon Layers (Android 8.0+ Devices)
-            # Override background color to solid black in values folder to avoid duplicate resource names
-            mkdir -p "$RES_DIR/values"
-            cat << 'EOF' > "$RES_DIR/values/ic_launcher_background.xml"
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <color name="ic_launcher_background">#000000</color>
-</resources>
-EOF
-
-            # Delete default Capacitor blue/white vector foreground drawables so Android falls back to our custom high-definition PNGs
-            rm -f "$RES_DIR/drawable-v24/ic_launcher_foreground.xml"
-            rm -f "$RES_DIR/mipmap-anydpi-v26/ic_launcher_foreground.xml"
-
-            # 3. Generate Foreground Layers from Padded Transparent SVG (108px - 432px)
-            rsvg-convert -w 108 -h 108 public/icon_foreground.svg -o "$RES_DIR/mipmap-mdpi/ic_launcher_foreground.png"
-            rsvg-convert -w 162 -h 162 public/icon_foreground.svg -o "$RES_DIR/mipmap-hdpi/ic_launcher_foreground.png"
-            rsvg-convert -w 216 -h 216 public/icon_foreground.svg -o "$RES_DIR/mipmap-xhdpi/ic_launcher_foreground.png"
-            rsvg-convert -w 324 -h 324 public/icon_foreground.svg -o "$RES_DIR/mipmap-xxhdpi/ic_launcher_foreground.png"
-            rsvg-convert -w 432 -h 432 public/icon_foreground.svg -o "$RES_DIR/mipmap-xxxhdpi/ic_launcher_foreground.png"
-          fi
+              # 2. Delete default overriding vector assets so modern Android uses our high-quality custom icons
+              rm -f "$RES_DIR/drawable-v24/ic_launcher_foreground.xml"
+              rm -rf "$RES_DIR/mipmap-anydpi-v26"
+            fi
 
       - name: Configure AndroidManifest with AdMob & Permissions
         run: |
