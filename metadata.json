@@ -1,6 +1,8 @@
 {
-  "name": "Attendance Plus",
-  "description": "Daily work attendance, overtime tracker, offline calendar, and monthly reporting dashboard.",
-  "requestFramePermissions": ["camera"],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "name": "NOTPAD MCQ MAKER",
+  "description": "Minimalist Notepad & 100 MCQ Quiz Maker with 2-Column A4 PDF Export, Rich Formatting, and Dark/Light Themes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

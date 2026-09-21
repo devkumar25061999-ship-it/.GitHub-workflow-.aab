@@ -1,81 +1,112 @@
-// Utility for handling Google AdMob in both Native (Capacitor/Android) and Web Preview environments
+import { AdMob, BannerAdOptions, BannerAdPosition, BannerAdSize } from '@capacitor-community/admob';
+import { Capacitor } from '@capacitor/core';
 
-export interface AdMobConfig {
-  appId?: string;
-  bannerAdUnitId?: string;
-  interstitialAdUnitId?: string;
-  isTestMode?: boolean;
-}
-
-// Google Official Test Ad Unit IDs (guaranteed safe during development & testing)
-export const TEST_AD_UNITS = {
-  androidBanner: 'ca-app-pub-3940256099942544/6300978111',
-  androidInterstitial: 'ca-app-pub-3940256099942544/1033173712',
-  androidRewarded: 'ca-app-pub-3940256099942544/5224354917',
+// Official Google AdMob Test Ad Unit IDs (Google Play Console ready)
+export const ADMOB_CONFIG = {
+  // Test IDs provided by Google for testing without policy violations
+  BANNER_ID_ANDROID: 'ca-app-pub-3940256099942544/6300978111',
+  INTERSTITIAL_ID_ANDROID: 'ca-app-pub-3940256099942544/1033173712',
+  REWARDED_ID_ANDROID: 'ca-app-pub-3940256099942544/5224354917',
+  APP_ID_ANDROID: 'ca-app-pub-3940256099942544~3347511713'
 };
 
-export class AdMobManager {
-  private static isInitialized = false;
+let isAdmobInitialized = false;
+let isInterstitialLoaded = false;
 
-  public static isNativeEnvironment(): boolean {
-    return typeof window !== 'undefined' && !!(window as any).Capacitor?.isNativePlatform?.();
+/**
+ * Initialize AdMob on Android Native platforms safely
+ */
+export async function initializeAdMob() {
+  if (!Capacitor.isNativePlatform()) {
+    return;
   }
 
-  public static async init(config?: AdMobConfig): Promise<boolean> {
-    if (this.isInitialized) return true;
+  try {
+    await AdMob.initialize({
+      testingDevices: ['2077ef9a63d2b398840261c8221a0c9b'],
+      initializeForTesting: true,
+    });
+    isAdmobInitialized = true;
+    console.log('[AdMob] Initialized successfully');
 
-    try {
-      if (this.isNativeEnvironment()) {
-        const capacitorPlugins = (window as any).Capacitor?.Plugins;
-        const adMobPlugin = capacitorPlugins?.AdMob;
-        if (adMobPlugin) {
-          await adMobPlugin.initialize({
-            testingDevices: config?.isTestMode !== false ? ['EMULATOR'] : [],
-            initializeForTesting: config?.isTestMode ?? true,
-          });
-          this.isInitialized = true;
-          return true;
-        }
-      }
-      this.isInitialized = true;
-      return true;
-    } catch (e) {
-      console.warn('AdMob SDK not available or running in web preview:', e);
-      return false;
-    }
+    // Preload first interstitial
+    preloadInterstitial();
+  } catch (err) {
+    console.warn('[AdMob] Initialization warning:', err);
   }
+}
 
-  public static async showBanner(adUnitId?: string): Promise<boolean> {
-    try {
-      if (this.isNativeEnvironment()) {
-        const capacitorPlugins = (window as any).Capacitor?.Plugins;
-        const adMobPlugin = capacitorPlugins?.AdMob;
-        if (adMobPlugin) {
-          await adMobPlugin.showBanner({
-            adId: adUnitId || TEST_AD_UNITS.androidBanner,
-            adSize: 'ADAPTIVE_BANNER',
-            position: 'BOTTOM_CENTER',
-            margin: 0,
-            isTesting: !adUnitId || adUnitId === TEST_AD_UNITS.androidBanner,
-          });
-          return true;
-        }
-      }
-      return false;
-    } catch (e) {
-      console.warn('Could not show native AdMob banner:', e);
-      return false;
-    }
+/**
+ * Show Banner Ad at the bottom of the screen
+ */
+export async function showBannerAd() {
+  if (!Capacitor.isNativePlatform() || !isAdmobInitialized) return;
+
+  try {
+    const options: BannerAdOptions = {
+      adId: ADMOB_CONFIG.BANNER_ID_ANDROID,
+      adSize: BannerAdSize.BANNER,
+      position: BannerAdPosition.BOTTOM_CENTER,
+      margin: 0,
+      isTesting: true
+    };
+    await AdMob.showBanner(options);
+    console.log('[AdMob] Banner shown');
+  } catch (err) {
+    console.warn('[AdMob] Banner show error:', err);
   }
+}
 
-  public static async hideBanner(): Promise<void> {
-    try {
-      if (this.isNativeEnvironment()) {
-        const capacitorPlugins = (window as any).Capacitor?.Plugins;
-        await capacitorPlugins?.AdMob?.hideBanner();
+/**
+ * Hide Banner Ad
+ */
+export async function hideBannerAd() {
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    await AdMob.hideBanner();
+  } catch (err) {
+    console.warn('[AdMob] Hide banner error:', err);
+  }
+}
+
+/**
+ * Preload Interstitial Ad
+ */
+export async function preloadInterstitial() {
+  if (!Capacitor.isNativePlatform() || !isAdmobInitialized) return;
+
+  try {
+    await AdMob.prepareInterstitial({
+      adId: ADMOB_CONFIG.INTERSTITIAL_ID_ANDROID,
+      isTesting: true,
+    });
+    isInterstitialLoaded = true;
+    console.log('[AdMob] Interstitial prepared');
+  } catch (err) {
+    isInterstitialLoaded = false;
+    console.warn('[AdMob] Prepare interstitial error:', err);
+  }
+}
+
+/**
+ * Show Interstitial Ad on key user milestones (e.g. after PDF export or batch actions)
+ */
+export async function showInterstitialAd() {
+  if (!Capacitor.isNativePlatform() || !isAdmobInitialized) return;
+
+  try {
+    if (isInterstitialLoaded) {
+      await AdMob.showInterstitial();
+      isInterstitialLoaded = false;
+      // Preload next interstitial in background
+      setTimeout(preloadInterstitial, 5000);
+    } else {
+      await preloadInterstitial();
+      if (isInterstitialLoaded) {
+        await AdMob.showInterstitial();
       }
-    } catch (e) {
-      console.warn('Could not hide banner:', e);
     }
+  } catch (err) {
+    console.warn('[AdMob] Show interstitial error:', err);
   }
 }

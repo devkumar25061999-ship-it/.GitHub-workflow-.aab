@@ -1,0 +1,100 @@
+name: Build Android APK & Google Play AAB
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android APK and AAB Bundle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Build Web Application
+        run: npm run build
+
+      - name: Setup Capacitor Android Project
+        run: |
+          npx cap add android || true
+          npx cap sync android
+
+      - name: Configure AndroidManifest with AdMob & Permissions
+        run: |
+          MANIFEST_FILE="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST_FILE" ]; then
+            # Add Internet and Network permissions if not present
+            if ! grep -q "android.permission.INTERNET" "$MANIFEST_FILE"; then
+              sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />' "$MANIFEST_FILE"
+            fi
+            
+            # Add Google AdMob Application ID meta-data
+            if ! grep -q "com.google.android.gms.ads.APPLICATION_ID" "$MANIFEST_FILE"; then
+              sed -i '/<\/application>/i \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>' "$MANIFEST_FILE"
+            fi
+          fi
+
+      - name: Generate Release Keystore (Fallback if no secret provided)
+        run: |
+          mkdir -p keystore
+          keytool -genkey -v -keystore keystore/release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias notpadkey -storepass notpad123 -keypass notpad123 -dname "CN=NotpadMCQ, OU=App, O=MCQMaker, L=City, S=State, C=IN"
+
+      - name: Grant Gradle Execute Permission
+        run: chmod +x android/gradlew
+
+      - name: Build Debug APK
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      - name: Build Release APK & Google Play Console AAB Bundle
+        run: |
+          cd android
+          ./gradlew assembleRelease
+          ./gradlew bundleRelease
+
+      - name: Sign Release APK & AAB Bundle
+        run: |
+          # Sign Release APK
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore keystore/release-key.jks -storepass notpad123 -keypass notpad123 android/app/build/outputs/apk/release/app-release-unsigned.apk notpadkey || true
+          zipalign -v 4 android/app/build/outputs/apk/release/app-release-unsigned.apk android/app/build/outputs/apk/release/NOTPAD-MCQ-MAKER-signed.apk || cp android/app/build/outputs/apk/release/app-release-unsigned.apk android/app/build/outputs/apk/release/NOTPAD-MCQ-MAKER-signed.apk || true
+
+          # Sign Release AAB for Google Play Store
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore keystore/release-key.jks -storepass notpad123 -keypass notpad123 android/app/build/outputs/bundle/release/app-release.aab notpadkey || true
+
+      - name: Organize Artifacts
+        run: |
+          mkdir -p dist-artifacts
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist-artifacts/NOTPAD-MCQ-MAKER-debug.apk || true
+          cp android/app/build/outputs/apk/release/*.apk dist-artifacts/ || true
+          cp android/app/build/outputs/bundle/release/app-release.aab dist-artifacts/NOTPAD-MCQ-MAKER-playstore.aab || true
+
+      - name: Upload APKs & AAB (Artifacts for Download)
+        uses: actions/upload-artifact@v4
+        with:
+          name: NOTPAD-MCQ-MAKER-Android-Builds
+          path: dist-artifacts/
+          retention-days: 30

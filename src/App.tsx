@@ -1,633 +1,380 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { AttendanceStatus, AttendanceDatabase, DayRecord, AppSettings } from './types';
-import {
-  MONTH_NAMES,
-  getCalendarGrid,
-  calculateMonthlySummary,
-} from './utils/calendar';
-import {
-  loadStoredRecords,
-  saveStoredRecords,
-  loadStoredSettings,
-  saveStoredSettings,
-  getLastSyncTime,
-  setLastSyncTime,
+import { Note } from './types';
+import { 
+  loadNotes, 
+  saveNotes
 } from './utils/storage';
-import { useOnlineStatus } from './hooks/useOnlineStatus';
-import { usePWAInstall } from './hooks/usePWAInstall';
-import { Header } from './components/Header';
-import { MonthNavigator } from './components/MonthNavigator';
-import { CalendarGrid } from './components/CalendarGrid';
-import { CategoryToolbar } from './components/CategoryToolbar';
-import { YearPickerModal } from './components/YearPickerModal';
-import { ReportModal } from './components/ReportModal';
-import { OvertimeModal } from './components/OvertimeModal';
-import { DayDetailModal } from './components/DayDetailModal';
-import { ResetConfirmModal } from './components/ResetConfirmModal';
-import { SettingsAndSyncModal } from './components/SettingsAndSyncModal';
-import { OfflineBanner } from './components/OfflineBanner';
-import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
-import { AdMobBanner } from './components/AdMobBanner';
-import { AppOpenAdModal } from './components/AppOpenAdModal';
-import { HowToUseModal } from './components/HowToUseModal';
-import { FacePunchModal } from './components/FacePunchModal';
-import { DutySettingModal } from './components/DutySettingModal';
-import { ReferModal } from './components/ReferModal';
-import { Camera, HelpCircle, SlidersHorizontal, Share2 } from 'lucide-react';
+import NotepadHeader from './components/NotepadHeader';
+import NotepadFooter from './components/NotepadFooter';
+import NotepadEditor from './components/NotepadEditor';
+import QuizEditor from './components/QuizEditor';
+import NotepadListView from './components/NotepadListView';
+import AppIconModal from './components/AppIconModal';
+import { Plus, Check, FileText, Sparkles, X } from 'lucide-react';
+import { LanguageCode, getTranslation } from './utils/translations';
 
 export default function App() {
-  // Initial state defaults to September 2026 matching user's uploaded screenshots
-  const [currentYear, setCurrentYear] = useState<number>(2026);
-  const [currentMonth, setCurrentMonth] = useState<number>(8); // 8 = September (0-indexed)
-  const [activeTool, setActiveTool] = useState<AttendanceStatus | null>('work');
-
-  // Persistence state
-  const [records, setRecords] = useState<AttendanceDatabase>(() => loadStoredRecords());
-  const [settings, setSettings] = useState<AppSettings>(() => loadStoredSettings());
-  const [lastSync, setLastSync] = useState<number | null>(() => getLastSyncTime());
-  const [pendingSync, setPendingSync] = useState<boolean>(false);
-
-  // Connectivity & PWA
-  const isOnline = useOnlineStatus();
-  const { isInstallable, install } = usePWAInstall();
-
-  // Modal states
-  const [isYearPickerOpen, setIsYearPickerOpen] = useState<boolean>(false);
-  const [isReportOpen, setIsReportOpen] = useState<boolean>(false);
-  const [isResetOpen, setIsResetOpen] = useState<boolean>(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const [settingsTab, setSettingsTab] = useState<'general' | 'admob' | 'backup' | 'apk'>('general');
-  const [isPrivacyOpen, setIsPrivacyOpen] = useState<boolean>(false);
-  const [isHowToUseOpen, setIsHowToUseOpen] = useState<boolean>(false);
-  const [isFacePunchOpen, setIsFacePunchOpen] = useState<boolean>(false);
-  const [isDutySettingOpen, setIsDutySettingOpen] = useState<boolean>(false);
-  const [isReferOpen, setIsReferOpen] = useState<boolean>(false);
-  const [overtimeModalDate, setOvertimeModalDate] = useState<string | null>(null);
-  const [detailModalDate, setDetailModalDate] = useState<string | null>(null);
-  const [isAppOpenAdActive, setIsAppOpenAdActive] = useState<boolean>(false);
-
-  const handleFacePunchSuccess = (data: {
-    status: AttendanceStatus;
-    inTime: string;
-    outTime: string;
-    punchType: 'in' | 'out';
-    faceSnapshot?: string;
-  }) => {
-    const today = new Date();
-    const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
-    setRecords((prev) => {
-      const existing = prev[dateKey] || {
-        date: dateKey,
-        status: data.status,
-        overtimeHours: 0,
-        updatedAt: Date.now(),
-      };
-
-      const updated: DayRecord = {
-        ...existing,
-        status: data.status,
-        inTime: data.punchType === 'in' ? data.inTime : (existing.inTime || data.inTime),
-        outTime: data.punchType === 'out' ? data.outTime : existing.outTime,
-        punchMethod: 'face_punch',
-        faceSnapshot: data.faceSnapshot || existing.faceSnapshot,
-        updatedAt: Date.now(),
-      };
-
-      const nextDb = { ...prev, [dateKey]: updated };
-      saveStoredRecords(nextDb);
-      return nextDb;
-    });
-    setPendingSync(true);
-  };
-
-  const handleOpenAdsSetup = () => {
-    setSettingsTab('admob');
-    setIsSettingsOpen(true);
-  };
-
-  const handleOpenApk = () => {
-    setSettingsTab('apk');
-    setIsSettingsOpen(true);
-  };
-
-  // Trigger Google AdMob App Open Ad when app opens (if enabled)
-  useEffect(() => {
-    if (settings.enableAppOpenAd !== false) {
-      const timer = setTimeout(() => {
-        setIsAppOpenAdActive(true);
-      }, 700);
-      return () => clearTimeout(timer);
+  const [notes, setNotes] = useState<Note[]>(() => loadNotes());
+  const [activeNoteId, setActiveNoteId] = useState<string>(() => {
+    const initialNotes = loadNotes();
+    return initialNotes.length > 0 ? initialNotes[0].id : '';
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Language state (persists across sessions)
+  const [language, setLanguage] = useState<LanguageCode>(() => {
+    const saved = localStorage.getItem('notepad_language');
+    if (saved === 'hi' || saved === 'pa' || saved === 'ur' || saved === 'sa' || saved === 'en') {
+      return saved as LanguageCode;
     }
-  }, [settings.enableAppOpenAd]);
+    return 'hi'; // Default friendly language
+  });
 
-  // Check URL hash for direct #privacy navigation (Play Store compliant)
-  useEffect(() => {
-    if (window.location.hash === '#privacy' || window.location.pathname === '/privacy') {
-      setIsPrivacyOpen(true);
+  const [isIconModalOpen, setIsIconModalOpen] = useState(false);
+
+  // Theme state: persists across sessions
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('notepad_theme');
+    if (saved !== null) {
+      return saved === 'dark';
     }
-  }, []);
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
 
-  // Auto-sync simulation when online
+  // Default to 'list' view so saved notes are always shown on screen, or 'editor' when clicking a note
+  const [viewMode, setViewMode] = useState<'editor' | 'list'>('list');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Speed dial menu state (like Google Keep)
+  const [isFabOpen, setIsFabOpen] = useState(false);
+
+  // Sync to localStorage immediately
   useEffect(() => {
-    if (isOnline && pendingSync) {
-      const timer = setTimeout(() => {
-        const now = Date.now();
-        setLastSync(now);
-        setLastSyncTime(now);
-        setPendingSync(false);
-      }, 1200);
-      return () => clearTimeout(timer);
-    }
-  }, [isOnline, pendingSync]);
+    saveNotes(notes);
+  }, [notes]);
 
-  // Derived calendar & monthly summary
-  const cells = useMemo(() => {
-    return getCalendarGrid(currentYear, currentMonth);
-  }, [currentYear, currentMonth]);
+  // Sync language to localStorage
+  useEffect(() => {
+    localStorage.setItem('notepad_language', language);
+  }, [language]);
 
-  const summary = useMemo(() => {
-    return calculateMonthlySummary(records, currentYear, currentMonth);
-  }, [records, currentYear, currentMonth]);
-
-  // Month navigation handlers
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear((y) => y - 1);
+  // Sync theme to localStorage and documentElement
+  useEffect(() => {
+    localStorage.setItem('notepad_theme', darkMode ? 'dark' : 'light');
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      document.body.style.backgroundColor = '#0a0a0a';
+      document.body.style.color = '#ffffff';
     } else {
-      setCurrentMonth((m) => m - 1);
+      document.documentElement.classList.remove('dark');
+      document.body.style.backgroundColor = '#ffffff';
+      document.body.style.color = '#000000';
     }
-  };
+  }, [darkMode]);
 
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear((y) => y + 1);
-    } else {
-      setCurrentMonth((m) => m + 1);
-    }
-  };
-
-  // Helper to persist record changes
-  const updateRecords = (updater: (prev: AttendanceDatabase) => AttendanceDatabase) => {
-    setRecords((prev) => {
-      const updated = updater(prev);
-      saveStoredRecords(updated);
-      setPendingSync(true);
-      return updated;
+  const handleToggleTheme = () => {
+    setDarkMode(prev => {
+      const next = !prev;
+      showToast(next ? 'Dark Theme' : 'Light Theme');
+      return next;
     });
   };
 
-  // Cell tap interaction
-  const handleCellClick = (dateStr: string) => {
-    // If clicking a date from previous/next month, smoothly switch to that month
-    const [yStr, mStr] = dateStr.split('-');
-    const targetYear = Number(yStr);
-    const targetMonth = Number(mStr) - 1;
-    if (targetYear !== currentYear || targetMonth !== currentMonth) {
-      setCurrentYear(targetYear);
-      setCurrentMonth(targetMonth);
-    }
+  const handleLanguageChange = (newLang: LanguageCode) => {
+    setLanguage(newLang);
+    showToast(
+      newLang === 'hi' ? 'भाषा: हिन्दी' :
+      newLang === 'pa' ? 'ਭਾਸ਼ਾ: ਪੰਜਾਬੀ' :
+      newLang === 'ur' ? 'زبان: اردو' :
+      newLang === 'sa' ? 'भाषा: संस्कृतम्' :
+      'Language: English'
+    );
+  };
 
-    if (!activeTool) {
-      // If no tool selected, open day details
-      setDetailModalDate(dateStr);
-      return;
-    }
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 2400);
+  };
 
-    if (activeTool === 'overtime') {
-      // Open overtime modal for this date
-      setOvertimeModalDate(dateStr);
-      return;
-    }
+  const activeNote = useMemo(() => {
+    return notes.find(n => n.id === activeNoteId) || notes[0] || null;
+  }, [notes, activeNoteId]);
 
-    // Toggle or apply active category
-    updateRecords((prev) => {
-      const existing = prev[dateStr];
-      const now = Date.now();
+  // Create a new simple Keep-style text note
+  const handleCreateTextNote = () => {
+    const newNote: Note = {
+      id: `note-${Date.now()}`,
+      title: '',
+      content: '',
+      type: 'text',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isPinned: false
+    };
 
-      if (existing && existing.status === activeTool) {
-        // Toggle off if clicking the same status
-        if (existing.overtimeHours && existing.overtimeHours > 0) {
-          // Keep overtime, reset status to none
-          return {
-            ...prev,
-            [dateStr]: {
-              ...existing,
-              status: 'none',
-              updatedAt: now,
-            },
-          };
+    setNotes(prev => [newNote, ...prev]);
+    setActiveNoteId(newNote.id);
+    setViewMode('editor');
+    setIsFabOpen(false);
+    setSearchQuery('');
+    showToast(getTranslation(language, 'toastNoteCreated'));
+  };
+
+  // Create a new 100 MCQ Quiz note
+  const handleCreateQuizNote = () => {
+    const newQuiz: Note = {
+      id: `quiz-${Date.now()}`,
+      title: '',
+      content: '',
+      type: 'quiz',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isPinned: false,
+      questions: [
+        {
+          id: `q-${Date.now()}-1`,
+          question: '',
+          optionA: '',
+          optionB: '',
+          optionC: '',
+          optionD: '',
+          correctAnswer: '',
+          explanation: ''
+        }
+      ]
+    };
+
+    setNotes(prev => [newQuiz, ...prev]);
+    setActiveNoteId(newQuiz.id);
+    setViewMode('editor');
+    setIsFabOpen(false);
+    setSearchQuery('');
+    showToast(getTranslation(language, 'toastQuizCreated'));
+  };
+
+  const handleUpdateNote = (updatedNote: Note) => {
+    setNotes(prev => prev.map(n => n.id === updatedNote.id ? updatedNote : n));
+  };
+
+  const handleDeleteNote = (id: string) => {
+    setNotes(prev => {
+      const remaining = prev.filter(n => n.id !== id);
+      if (activeNoteId === id) {
+        if (remaining.length > 0) {
+          setActiveNoteId(remaining[0].id);
         } else {
-          // Remove record completely
-          const next = { ...prev };
-          delete next[dateStr];
-          return next;
+          setActiveNoteId('');
         }
       }
-
-      // Set new status (preserve overtime if already recorded)
-      return {
-        ...prev,
-        [dateStr]: {
-          date: dateStr,
-          status: activeTool,
-          overtimeHours: existing?.overtimeHours || 0,
-          notes: existing?.notes || '',
-          updatedAt: now,
-        },
-      };
+      return remaining;
     });
+    showToast(getTranslation(language, 'toastDeleted'));
   };
 
-  // Cell long-press or secondary click -> opens DayDetailModal
-  const handleCellLongPress = (dateStr: string) => {
-    const [yStr, mStr] = dateStr.split('-');
-    const targetYear = Number(yStr);
-    const targetMonth = Number(mStr) - 1;
-    if (targetYear !== currentYear || targetMonth !== currentMonth) {
-      setCurrentYear(targetYear);
-      setCurrentMonth(targetMonth);
-    }
-    setDetailModalDate(dateStr);
-  };
-
-  // Overtime save handler
-  const handleSaveOvertime = (hours: number) => {
-    if (!overtimeModalDate) return;
-    const dateKey = overtimeModalDate;
-
-    updateRecords((prev) => {
-      const existing = prev[dateKey];
-      return {
-        ...prev,
-        [dateKey]: {
-          date: dateKey,
-          status: existing?.status && existing.status !== 'none' ? existing.status : 'work',
-          overtimeHours: hours,
-          notes: existing?.notes || '',
-          updatedAt: Date.now(),
-        },
-      };
-    });
-  };
-
-  // Overtime clear handler
-  const handleClearOvertime = () => {
-    if (!overtimeModalDate) return;
-    const dateKey = overtimeModalDate;
-
-    updateRecords((prev) => {
-      const existing = prev[dateKey];
-      if (!existing) return prev;
-
-      if (!existing.status || existing.status === 'none') {
-        const next = { ...prev };
-        delete next[dateKey];
-        return next;
+  const handleTogglePin = (id: string) => {
+    setNotes(prev => prev.map(n => {
+      if (n.id === id) {
+        const nextPin = !n.isPinned;
+        showToast(nextPin ? getTranslation(language, 'pin') : getTranslation(language, 'unpin'));
+        return { ...n, isPinned: nextPin, updatedAt: new Date().toISOString() };
       }
-
-      return {
-        ...prev,
-        [dateKey]: {
-          ...existing,
-          overtimeHours: 0,
-          updatedAt: Date.now(),
-        },
-      };
-    });
-  };
-
-  // Day detail save handler
-  const handleSaveDayDetail = (updatedRecord: DayRecord) => {
-    updateRecords((prev) => ({
-      ...prev,
-      [updatedRecord.date]: updatedRecord,
+      return n;
     }));
   };
 
-  // Day detail delete handler
-  const handleDeleteDay = (dateStr: string) => {
-    updateRecords((prev) => {
-      const next = { ...prev };
-      delete next[dateStr];
-      return next;
-    });
-  };
-
-  // Clear Month handler
-  const handleClearCurrentMonth = () => {
-    updateRecords((prev) => {
-      const next = { ...prev };
-      const prefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-`;
-      for (const key of Object.keys(next)) {
-        if (key.startsWith(prefix)) {
-          delete next[key];
-        }
-      }
-      return next;
-    });
-  };
-
-  // Clear All handler
-  const handleClearAll = () => {
-    updateRecords(() => ({}));
-  };
-
-  // Restore demo handler
-  const handleRestoreDemo = () => {
-    localStorage.removeItem('attendance_plus_records_v1');
-    const fresh = loadStoredRecords();
-    setRecords(fresh);
-    setCurrentYear(2026);
-    setCurrentMonth(8);
-  };
-
-  // Manual Sync trigger
-  const handleManualSync = () => {
-    const now = Date.now();
-    setLastSync(now);
-    setLastSyncTime(now);
-    setPendingSync(false);
-  };
-
-  // Save Settings
-  const handleSaveSettings = (newSettings: AppSettings) => {
-    setSettings(newSettings);
-    saveStoredSettings(newSettings);
-  };
-
-  // Restore Backup
-  const handleRestoreBackup = (
-    restoredRecords: AttendanceDatabase,
-    restoredSettings?: AppSettings
-  ) => {
-    setRecords(restoredRecords);
-    saveStoredRecords(restoredRecords);
-    if (restoredSettings) {
-      setSettings(restoredSettings);
-      saveStoredSettings(restoredSettings);
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    if (viewMode === 'editor' && query.trim().length > 0) {
+      setViewMode('list');
     }
   };
 
+  // Filter and sort notes
+  const filteredNotes = useMemo(() => {
+    let result = [...notes];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(note => 
+        note.title.toLowerCase().includes(q) ||
+        note.content.toLowerCase().includes(q) ||
+        note.questions?.some(item => 
+          item.question.toLowerCase().includes(q) ||
+          item.optionA.toLowerCase().includes(q) ||
+          item.optionB.toLowerCase().includes(q) ||
+          item.optionC.toLowerCase().includes(q) ||
+          item.optionD.toLowerCase().includes(q) ||
+          item.explanation.toLowerCase().includes(q)
+        )
+      );
+    }
+
+    result.sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+
+    return result;
+  }, [notes, searchQuery]);
+
   return (
-    <div
-      id="app-root"
-      className="min-h-screen min-h-[100dvh] bg-[#fcf8d8] flex flex-col items-center justify-between font-sans text-gray-900 selection:bg-blue-200 overscroll-none"
-    >
-      {/* Offline Status Banner */}
-      <OfflineBanner isOnline={isOnline} />
+    <div className={`min-h-screen flex flex-col antialiased relative transition-colors duration-200 ${
+      darkMode 
+        ? 'bg-neutral-950 text-white selection:bg-white selection:text-black' 
+        : 'bg-white text-black selection:bg-black selection:text-white'
+    }`}>
+      
+      {/* Top Header: App Icon, App Name, Language Switcher, Search Bar, and Theme Toggle */}
+      <NotepadHeader
+        searchQuery={searchQuery}
+        onSearchChange={handleSearchChange}
+        darkMode={darkMode}
+        onToggleTheme={handleToggleTheme}
+        language={language}
+        onLanguageChange={handleLanguageChange}
+        onOpenIconModal={() => setIsIconModalOpen(true)}
+        onTitleClick={() => {
+          setViewMode('list');
+          setSearchQuery('');
+        }}
+      />
 
-      {/* Main Container - Responsive on Mobile & Tablet */}
-      <div className="w-full max-w-lg flex flex-col items-center flex-1">
-        {/* Dark Top Header with Year Selector & Icons */}
-        <div className="w-full">
-          <Header
-            currentYear={currentYear}
-            onOpenYearPicker={() => setIsYearPickerOpen(true)}
-            onOpenReport={() => setIsReportOpen(true)}
-            onOpenReset={() => setIsResetOpen(true)}
-            onOpenSettings={() => {
-              setSettingsTab('general');
-              setIsSettingsOpen(true);
+      {/* Main Area: Saved Notes List, Text Note Editor, or Quiz Editor */}
+      <main className="flex-1 w-full mx-auto">
+        {viewMode === 'editor' && activeNote && !searchQuery ? (
+          activeNote.type === 'quiz' ? (
+            <QuizEditor
+              note={activeNote}
+              darkMode={darkMode}
+              onUpdateNote={handleUpdateNote}
+              onBack={() => setViewMode('list')}
+              onDeleteNote={handleDeleteNote}
+              onTogglePin={(id) => handleTogglePin(id)}
+            />
+          ) : (
+            <NotepadEditor
+              note={activeNote}
+              darkMode={darkMode}
+              onUpdateNote={handleUpdateNote}
+              onBack={() => setViewMode('list')}
+              onDeleteNote={handleDeleteNote}
+              onTogglePin={(id) => handleTogglePin(id)}
+            />
+          )
+        ) : (
+          <NotepadListView
+            notes={filteredNotes}
+            searchQuery={searchQuery}
+            activeNoteId={activeNoteId}
+            darkMode={darkMode}
+            onSelectNote={(selected) => {
+              setActiveNoteId(selected.id);
+              setViewMode('editor');
+              setSearchQuery('');
             }}
-            onOpenHowToUse={() => setIsHowToUseOpen(true)}
-            onOpenRefer={() => setIsReferOpen(true)}
-            isOnline={isOnline}
-            pendingSync={pendingSync}
-            onInstallPWA={install}
-            isInstallable={isInstallable}
+            onDeleteNote={handleDeleteNote}
+            onTogglePin={handleTogglePin}
+            onClearSearch={() => {
+              setSearchQuery('');
+              setViewMode('list');
+            }}
           />
-        </div>
+        )}
+      </main>
 
-        {/* Month Navigator & Summary Badges */}
-        <MonthNavigator
-          monthName={MONTH_NAMES[currentMonth]}
-          workDays={summary.workDays}
-          halfDays={summary.halfDays}
-          effectiveWorkDays={summary.effectiveWorkDays}
-          overtimeHours={summary.overtimeHours}
-          onPrevMonth={handlePrevMonth}
-          onNextMonth={handleNextMonth}
+      {/* Subtle Light/Dark Footer */}
+      <NotepadFooter
+        darkMode={darkMode}
+      />
+
+      {/* App Icon Modal (Preview & Download B&W Icon for Google Play / Android) */}
+      <AppIconModal
+        isOpen={isIconModalOpen}
+        onClose={() => setIsIconModalOpen(false)}
+        darkMode={darkMode}
+      />
+
+      {/* Backdrop when Speed Dial FAB is open */}
+      {isFabOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
+          onClick={() => setIsFabOpen(false)}
         />
+      )}
 
-        {/* Prominent Quick Action Bar for Face Punch, Guide & Duty Setting */}
-        <div className="w-full px-3 py-1 flex items-center gap-2">
-          {settings.enableFacePunch !== false && (
+      {/* Google Keep Style Expandable Floating Action Button (FAB) */}
+      <div className="fixed safe-bottom-btn right-4 sm:right-6 md:right-8 z-40 flex flex-col items-end space-y-3">
+        {/* Expanded Options */}
+        {isFabOpen && (
+          <div className="flex flex-col items-end space-y-2.5 mb-1 animate-in slide-in-from-bottom-3 fade-in duration-200">
+            {/* Option 1: MCQ Quiz Maker (100 Qs + PDF) */}
             <button
-              id="btn-prominent-face-punch"
-              onClick={() => setIsFacePunchOpen(true)}
-              className="flex-1 py-2 px-2.5 bg-gradient-to-r from-purple-700 via-purple-600 to-indigo-600 hover:from-purple-800 hover:to-indigo-700 text-white rounded-xl shadow-xs text-xs font-black flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
-              title="Camera Face Verification Duty Punch"
+              onClick={handleCreateQuizNote}
+              className={`flex items-center space-x-3 px-4 py-2.5 rounded-2xl shadow-xl active:scale-95 transition-all cursor-pointer border group ${
+                darkMode 
+                  ? 'bg-neutral-900 border-neutral-800 text-white hover:bg-neutral-800' 
+                  : 'bg-white border-neutral-200 text-black hover:bg-neutral-50'
+              }`}
             >
-              <Camera className="w-4 h-4 text-purple-200 shrink-0" />
-              <span className="truncate">Face Punch</span>
+              <span className="text-xs sm:text-sm font-bold">{getTranslation(language, 'newQuiz')}</span>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform ${
+                darkMode ? 'bg-white text-black' : 'bg-black text-white'
+              }`}>
+                <Sparkles className="w-5 h-5" />
+              </div>
             </button>
+
+            {/* Option 2: Standard Notepad Note */}
+            <button
+              onClick={handleCreateTextNote}
+              className={`flex items-center space-x-3 px-4 py-2.5 rounded-2xl shadow-xl active:scale-95 transition-all cursor-pointer border group ${
+                darkMode 
+                  ? 'bg-neutral-900 border-neutral-800 text-white hover:bg-neutral-800' 
+                  : 'bg-white border-neutral-200 text-black hover:bg-neutral-50'
+              }`}
+            >
+              <span className="text-xs sm:text-sm font-bold">{getTranslation(language, 'newNote')}</span>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform ${
+                darkMode ? 'bg-neutral-800 text-white' : 'bg-neutral-100 text-black'
+              }`}>
+                <FileText className="w-5 h-5" />
+              </div>
+            </button>
+          </div>
+        )}
+
+        {/* Primary Toggle (+) Button */}
+        <button
+          onClick={() => setIsFabOpen(!isFabOpen)}
+          className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full shadow-2xl flex items-center justify-center active:scale-90 hover:scale-105 transition-all duration-200 cursor-pointer focus:outline-none ${
+            darkMode 
+              ? (isFabOpen ? 'bg-neutral-800 text-white rotate-45' : 'bg-white text-black ring-4 ring-neutral-800')
+              : (isFabOpen ? 'bg-neutral-900 text-white rotate-45' : 'bg-black text-white ring-4 ring-neutral-200')
+          }`}
+          title={isFabOpen ? 'Close Menu' : 'Create Note or Quiz (+)'}
+          aria-label="Create New"
+        >
+          {isFabOpen ? (
+            <X className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2.5]" />
+          ) : (
+            <Plus className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2.5]" />
           )}
-
-          <button
-            id="btn-prominent-how-to-use"
-            onClick={() => setIsHowToUseOpen(true)}
-            className="py-2 px-3 bg-amber-500 hover:bg-amber-600 text-gray-950 rounded-xl shadow-xs text-xs font-black flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
-            title="How to Use Guide"
-          >
-            <HelpCircle className="w-4 h-4 text-gray-900 shrink-0" />
-            <span>Guide</span>
-          </button>
-
-          <button
-            id="btn-prominent-duty-settings"
-            onClick={() => setIsDutySettingOpen(true)}
-            className="py-2 px-3 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white rounded-xl shadow-xs text-xs font-black flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
-            title="Duty Settings: Sunday off/on, Holiday salary count & Shift timing"
-          >
-            <SlidersHorizontal className="w-4 h-4 text-blue-200 shrink-0" />
-            <span>Duty Setting</span>
-          </button>
-        </div>
-
-        {/* Calendar Grid */}
-        <main className="w-full flex justify-center my-1 flex-1">
-          <CalendarGrid
-            cells={cells}
-            records={records}
-            onCellClick={handleCellClick}
-            onCellLongPress={handleCellLongPress}
-          />
-        </main>
-
-        {/* Bottom Category Toolbar (2x3 Grid matching Screenshot 1 & 4) */}
-        <footer className="w-full">
-          <CategoryToolbar
-            activeTool={activeTool}
-            onSelectTool={(status) => {
-              // Tapping the currently selected tool again will keep it or deselect
-              setActiveTool((prev) => (prev === status ? null : status));
-            }}
-          />
-        </footer>
-
-        {/* Google AdMob Banner Slot (Google Play Console Policy Compliant) */}
-        <div className="w-full mt-2 mb-1">
-          <AdMobBanner
-            admobBannerId={settings.admobBannerId}
-            testMode={settings.admobTestMode}
-            onOpenPrivacy={() => setIsPrivacyOpen(true)}
-          />
-        </div>
-
-        {/* Clean Application Footer */}
-        <div className="w-full text-center text-[11px] text-gray-500 py-1.5 flex items-center justify-center gap-2">
-          <span>Attendance Plus v1.0.0</span>
-          <span>•</span>
-          <button
-            onClick={() => setIsReferOpen(true)}
-            className="hover:text-emerald-700 text-emerald-800 font-bold flex items-center gap-1 cursor-pointer"
-          >
-            <Share2 className="w-3 h-3 text-emerald-600" />
-            <span>Refer to Friend</span>
-          </button>
-          <span>•</span>
-          <button
-            onClick={() => setIsPrivacyOpen(true)}
-            className="hover:text-gray-900 underline font-medium cursor-pointer"
-          >
-            Privacy Policy
-          </button>
-        </div>
+        </button>
       </div>
 
-      {/* Modals */}
-      {/* 1. Year Picker Modal (matching Screenshot 3) */}
-      <YearPickerModal
-        isOpen={isYearPickerOpen}
-        selectedYear={currentYear}
-        onSelectYear={(year) => setCurrentYear(year)}
-        onClose={() => setIsYearPickerOpen(false)}
-      />
-
-      {/* 2. Monthly Report & Dashboard Modal (matching Screenshot 2 + user export requests) */}
-      <ReportModal
-        isOpen={isReportOpen}
-        onClose={() => setIsReportOpen(false)}
-        summary={summary}
-        records={records}
-        settings={settings}
-      />
-
-      {/* 3. Overtime Hours Selector Modal */}
-      {overtimeModalDate && (
-        <OvertimeModal
-          isOpen={!!overtimeModalDate}
-          dateStr={overtimeModalDate}
-          initialHours={records[overtimeModalDate]?.overtimeHours || 0}
-          onSave={handleSaveOvertime}
-          onClear={handleClearOvertime}
-          onClose={() => setOvertimeModalDate(null)}
-        />
+      {/* Toast Alert */}
+      {toastMessage && (
+        <div className={`fixed safe-bottom-btn left-4 sm:left-6 z-50 text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl shadow-2xl flex items-center space-x-2 animate-in fade-in slide-in-from-bottom-2 duration-150 border ${
+          darkMode ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-black border-neutral-900 text-white'
+        }`}>
+          <Check className="w-4 h-4 shrink-0 text-emerald-400" />
+          <span>{toastMessage}</span>
+        </div>
       )}
 
-      {/* 4. Day Detail Modal */}
-      {detailModalDate && (
-        <DayDetailModal
-          isOpen={!!detailModalDate}
-          dateStr={detailModalDate}
-          record={records[detailModalDate]}
-          onSave={handleSaveDayDetail}
-          onDelete={handleDeleteDay}
-          onClose={() => setDetailModalDate(null)}
-        />
-      )}
-
-      {/* 5. Clear / Reset Confirmation Modal */}
-      <ResetConfirmModal
-        isOpen={isResetOpen}
-        monthName={MONTH_NAMES[currentMonth]}
-        year={currentYear}
-        onClearMonth={handleClearCurrentMonth}
-        onClearAll={handleClearAll}
-        onRestoreDemo={handleRestoreDemo}
-        onClose={() => setIsResetOpen(false)}
-      />
-
-      {/* 6. Settings, Backup & Offline Sync Modal */}
-      <SettingsAndSyncModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        initialTab={settingsTab}
-        settings={settings}
-        onSaveSettings={handleSaveSettings}
-        records={records}
-        onRestoreBackup={handleRestoreBackup}
-        isOnline={isOnline}
-        onManualSync={handleManualSync}
-        lastSyncTime={lastSync}
-        onInstallPWA={install}
-        isInstallable={isInstallable}
-        onOpenPrivacy={() => setIsPrivacyOpen(true)}
-        onOpenRefer={() => {
-          setIsSettingsOpen(false);
-          setIsReferOpen(true);
-        }}
-        onTestAppOpenAd={() => setIsAppOpenAdActive(true)}
-      />
-
-      {/* 7. Privacy Policy Modal (Google Play Console Mandatory) */}
-      <PrivacyPolicyModal
-        isOpen={isPrivacyOpen}
-        onClose={() => setIsPrivacyOpen(false)}
-      />
-
-      {/* 8. Google AdMob App Open / Interstitial Full-Screen Ad */}
-      <AppOpenAdModal
-        isOpen={isAppOpenAdActive}
-        onClose={() => setIsAppOpenAdActive(false)}
-        adUnitId={settings.admobAppOpenId || 'ca-app-pub-3940256099942544/9257395921'}
-        testMode={settings.admobTestMode !== false}
-        onOpenPrivacy={() => setIsPrivacyOpen(true)}
-      />
-
-      {/* 9. How to Use Guide Modal */}
-      <HowToUseModal
-        isOpen={isHowToUseOpen}
-        onClose={() => setIsHowToUseOpen(false)}
-        onOpenSettings={() => {
-          setIsHowToUseOpen(false);
-          setSettingsTab('general');
-          setIsSettingsOpen(true);
-        }}
-        onOpenFacePunch={() => {
-          setIsHowToUseOpen(false);
-          setIsFacePunchOpen(true);
-        }}
-      />
-
-      {/* 10. Face Punch Duty Verification Modal */}
-      <FacePunchModal
-        isOpen={isFacePunchOpen}
-        onClose={() => setIsFacePunchOpen(false)}
-        onPunchSuccess={handleFacePunchSuccess}
-        defaultShiftIn={settings.defaultShiftIn}
-        defaultShiftOut={settings.defaultShiftOut}
-      />
-
-      {/* 11. Duty Setting Modal (Sunday Off/On, Paid Holiday Salary, Shift Hours) */}
-      <DutySettingModal
-        isOpen={isDutySettingOpen}
-        onClose={() => setIsDutySettingOpen(false)}
-        settings={settings}
-        onSaveSettings={handleSaveSettings}
-        currentMonthName={summary.monthName}
-        holidayDaysCount={summary.holidayDays}
-        totalSundaysCount={summary.totalSundays}
-      />
-
-      {/* 12. Refer to Friend Modal (Google Play & AdMob Policy Compliant) */}
-      <ReferModal
-        isOpen={isReferOpen}
-        onClose={() => setIsReferOpen(false)}
-      />
     </div>
   );
 }
