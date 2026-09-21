@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
 const NOTIFICATION_CHANNEL_ID = 'hourly-alerts';
@@ -13,8 +14,13 @@ const alertMessages = [
   { title: 'Papaa ka message ✉️', body: 'Ghar kab aaoge? Pehle MCQ quiz complete karo! 🎒' }
 ];
 
-// Initialize and register notification channel
+// Initialize and register notification channel safely
 export async function initNotifications() {
+  if (!Capacitor.isPluginAvailable('LocalNotifications')) {
+    console.log('LocalNotifications plugin is not available on this platform/browser.');
+    return;
+  }
+
   try {
     const isSupported = await LocalNotifications.checkPermissions();
     if (isSupported.display !== 'granted') {
@@ -32,13 +38,22 @@ export async function initNotifications() {
     });
 
     await scheduleHourlyAlerts();
-  } catch (error) {
-    console.error('Error in initNotifications:', error);
+  } catch (error: any) {
+    const errorMessage = error?.message || String(error);
+    if (errorMessage.includes('not supported') || errorMessage.includes('permission')) {
+      console.log('Notifications not supported or blocked in this browser/iframe context.');
+    } else {
+      console.error('Error in initNotifications:', error);
+    }
   }
 }
 
 // Clear old and schedule new hourly reminders for daytime hours (8 AM to 10 PM)
 export async function scheduleHourlyAlerts() {
+  if (!Capacitor.isPluginAvailable('LocalNotifications')) {
+    return;
+  }
+
   try {
     // 1. Cancel existing pending notifications first to avoid duplication
     const pending = await LocalNotifications.getPending();
@@ -80,13 +95,23 @@ export async function scheduleHourlyAlerts() {
       });
       console.log('Successfully scheduled hourly alerts:', scheduledList.length);
     }
-  } catch (error) {
-    console.error('Failed to schedule alerts:', error);
+  } catch (error: any) {
+    const errorMessage = error?.message || String(error);
+    if (errorMessage.includes('not supported') || errorMessage.includes('permission')) {
+      console.log('Scheduling notifications not supported in this browser environment.');
+    } else {
+      console.error('Failed to schedule alerts:', error);
+    }
   }
 }
 
 // Helper to manually trigger a test notification instantly
 export async function triggerTestNotification() {
+  if (!Capacitor.isPluginAvailable('LocalNotifications')) {
+    console.log('LocalNotifications not available for test notification.');
+    return;
+  }
+
   try {
     const msg = alertMessages[Math.floor(Math.random() * alertMessages.length)];
     await LocalNotifications.schedule({
@@ -102,6 +127,6 @@ export async function triggerTestNotification() {
       ]
     });
   } catch (error) {
-    console.error('Test notification trigger failed:', error);
+    console.log('Test notification trigger skipped or failed in this environment.');
   }
 }

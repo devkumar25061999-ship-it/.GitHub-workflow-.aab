@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-100 -100 712 712" width="512" height="512">
+  <!-- Notepad Body with black fill and white outline -->
+  <rect x="96" y="86" width="320" height="340" rx="32" fill="#000000" stroke="#ffffff" stroke-width="18"/>
+  
+  <!-- Notepad Spiral Rings / Binder Holes -->
+  <line x1="150" y1="64" x2="150" y2="108" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  <line x1="210" y1="64" x2="210" y2="108" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  <line x1="270" y1="64" x2="270" y2="108" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  <line x1="330" y1="64" x2="330" y2="108" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+
+  <!-- Notepad Content Lines -->
+  <line x1="140" y1="160" x2="372" y2="160" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>
+  <line x1="140" y1="216" x2="372" y2="216" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>
+  <line x1="140" y1="272" x2="290" y2="272" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>
+  
+  <!-- MCQ Checkmark Badge (Right Bottom) -->
+  <circle cx="340" cy="328" r="54" fill="#ffffff"/>
+  <path d="M316 328L332 344L366 310" fill="none" stroke="#000000" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
