@@ -78,7 +78,8 @@ export default function NotepadEditor({
     if (isDownloading) return;
     setIsDownloading(true);
     try {
-      await downloadNoteAsPdf(note.title, note.content, note.updatedAt);
+      const currentContent = (editorRef.current && editorRef.current.innerHTML) ? editorRef.current.innerHTML : note.content;
+      await downloadNoteAsPdf(note.title, currentContent, note.updatedAt);
     } catch (err) {
       console.error('[PDF Download Error]', err);
     } finally {

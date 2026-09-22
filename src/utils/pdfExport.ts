@@ -7,6 +7,20 @@ import { Share } from '@capacitor/share';
 import { showInterstitialAd } from './admob';
 
 /**
+ * Normalizes and sanitizes HTML text colors so that light/white text entered in Dark Mode
+ * is automatically converted to crisp, readable dark text on the white PDF page.
+ */
+function sanitizeHtmlForPdf(html: string): string {
+  if (!html) return '';
+  return html
+    // Convert pure white or near-white colors to deep dark
+    .replace(/<font[^>]*color=["']?(#ffffff|#fff|white|rgb\(255,\s*255,\s*255\))["']?[^>]*>/gi, '<font color="#111827">')
+    .replace(/color:\s*(#ffffff|#fff|white|rgb\(255,\s*255,\s*255\))/gi, 'color: #111827')
+    // Convert light gray or light pastel text to readable dark tones
+    .replace(/color:\s*(#d1d5db|#e5e7eb|#f3f4f6)/gi, 'color: #374151');
+}
+
+/**
  * Universal safe helper to save or share a generated PDF document across Web & Android Native
  */
 async function saveOrSharePdf(doc: jsPDF, filename: string) {
@@ -16,8 +30,7 @@ async function saveOrSharePdf(doc: jsPDF, filename: string) {
   // Try Native Capacitor save first if available
   if (Capacitor.isNativePlatform()) {
     try {
-      if (Filesystem && Filesystem.writeFile && Share && Share.share) {
-        // Get base64 string from doc
+      if (Filesystem && Filesystem.writeFile) {
         const base64Data = doc.output('datauristring').split(',')[1];
         
         // 1. Persistently save the PDF file to the device's Documents directory
@@ -28,23 +41,22 @@ async function saveOrSharePdf(doc: jsPDF, filename: string) {
           recursive: true
         });
 
-        // 2. Alert the user that the file was successfully saved to their Documents folder
-        alert(`💾 PDF Saved Successfully!\n\nYour PDF has been saved to your device's "Documents" folder as:\n👉 "${fullFilename}"\n\nClick OK to open the Share / Send menu.`);
-
-        // 3. Share / Open native Android file sheet
-        await Share.share({
-          title: filename,
-          text: `Exported PDF: ${filename}`,
-          url: savedFile.uri,
-          dialogTitle: 'Save / Open PDF'
-        });
+        // 2. Share / Open native Android file sheet
+        if (Share && Share.share) {
+          await Share.share({
+            title: filename,
+            text: `Exported PDF: ${filename}`,
+            url: savedFile.uri,
+            dialogTitle: 'Save / Open PDF'
+          });
+        }
 
         // Trigger optional AdMob ad on Android
         showInterstitialAd().catch(() => {});
         return;
       }
     } catch (err) {
-      console.warn('[PDF Export] Native file write/share plugin failed or was not configured:', err);
+      console.warn('[PDF Export] Native file write/share plugin failed, falling back to Web download:', err);
     }
   }
 
@@ -57,8 +69,12 @@ async function saveOrSharePdf(doc: jsPDF, filename: string) {
     link.download = fullFilename;
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      if (document.body.contains(link)) {
+        document.body.removeChild(link);
+      }
+      URL.revokeObjectURL(url);
+    }, 1000);
   } catch (err) {
     console.warn('[PDF Export] Blob link download failed, trying standard doc.save() fallback:', err);
     doc.save(fullFilename);
@@ -70,22 +86,25 @@ async function saveOrSharePdf(doc: jsPDF, filename: string) {
  */
 export async function downloadNoteAsPdf(title: string, contentHtmlOrText: string, dateString?: string) {
   const noteTitle = title.trim() || 'Untitled Note';
+  const cleanContent = sanitizeHtmlForPdf(contentHtmlOrText);
 
-  // Create a beautifully formatted container inside the normal viewport flow but invisible to avoid offscreen rendering optimization bugs on mobile WebView
+  // Create a container with 100% opacity and full visibility (rendered offscreen via fixed position and z-index)
   const exportArea = document.createElement('div');
-  exportArea.style.position = 'absolute';
-  exportArea.style.left = '0';
+  exportArea.id = 'pdf-note-export-root';
+  exportArea.style.position = 'fixed';
   exportArea.style.top = '0';
-  exportArea.style.zIndex = '-9999';
-  exportArea.style.opacity = '0.001';
-  exportArea.style.pointerEvents = 'none';
+  exportArea.style.left = '0';
   exportArea.style.width = '794px'; // Standard A4 width at 96 DPI
+  exportArea.style.zIndex = '999999';
   exportArea.style.backgroundColor = '#ffffff';
-  exportArea.style.color = '#111111';
-  exportArea.style.padding = '50px 60px';
-  exportArea.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif';
+  exportArea.style.color = '#111827';
+  exportArea.style.padding = '48px 56px';
+  exportArea.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
   exportArea.style.boxSizing = 'border-box';
   exportArea.style.wordBreak = 'break-word';
+  exportArea.style.opacity = '1';
+  exportArea.style.visibility = 'visible';
+  exportArea.style.pointerEvents = 'none';
 
   // Format date correctly
   const dateFormatted = dateString 
@@ -105,28 +124,31 @@ export async function downloadNoteAsPdf(title: string, contentHtmlOrText: string
   // Inject styled HTML matching the editor formatting (bold, italic, colors, lists)
   exportArea.innerHTML = `
     <style>
+      #pdf-note-export-root, #pdf-note-export-root * {
+        box-sizing: border-box;
+      }
       .pdf-title {
-        font-size: 28px;
+        font-size: 26px;
         font-weight: 800;
-        color: #000000;
+        color: #000000 !important;
         margin: 0 0 8px 0;
         line-height: 1.25;
       }
       .pdf-date {
         font-size: 11px;
-        color: #71717a;
+        color: #6b7280 !important;
         margin: 0 0 16px 0;
-        font-weight: 500;
+        font-weight: 600;
       }
       .pdf-divider {
         border: none;
-        border-top: 1px solid #e4e4e7;
+        border-top: 1.5px solid #e5e7eb;
         margin-bottom: 24px;
       }
       .pdf-content {
         font-size: 15px;
         line-height: 1.7;
-        color: #18181b;
+        color: #1f2937 !important;
       }
       .pdf-content p {
         margin-top: 0;
@@ -147,9 +169,9 @@ export async function downloadNoteAsPdf(title: string, contentHtmlOrText: string
       }
       /* Custom Font Size mapping from browser execCommand font tags */
       .pdf-content font[size="2"] { font-size: 13px !important; }
-      .pdf-content font[size="3"] { font-size: 16px !important; }
-      .pdf-content font[size="5"] { font-size: 20px !important; }
-      .pdf-content font[size="6"] { font-size: 24px !important; font-weight: 700; }
+      .pdf-content font[size="3"] { font-size: 15px !important; }
+      .pdf-content font[size="5"] { font-size: 19px !important; font-weight: 700; }
+      .pdf-content font[size="6"] { font-size: 24px !important; font-weight: 800; }
       
       /* Format standard editor rich tags */
       b, strong { font-weight: 700; }
@@ -157,65 +179,81 @@ export async function downloadNoteAsPdf(title: string, contentHtmlOrText: string
       u { text-decoration: underline; }
     </style>
     <h1 class="pdf-title">${noteTitle}</h1>
-    <p class="pdf-date">Created / Updated: ${dateFormatted}</p>
+    <p class="pdf-date">Date: ${dateFormatted}</p>
     <hr class="pdf-divider" />
-    <div class="pdf-content">${contentHtmlOrText || '<p style="color:#a1a1aa; font-style:italic;">(Empty note)</p>'}</div>
+    <div class="pdf-content">${cleanContent || '<p style="color:#9ca3af; font-style:italic;">(Empty note)</p>'}</div>
   `;
 
   document.body.appendChild(exportArea);
 
   try {
     const canvas = await html2canvas(exportArea, {
-      scale: 2, // Double resolution for ultra-sharp vector text rendering
+      scale: 2, // 2x scale for sharp text
       useCORS: true,
       backgroundColor: '#ffffff',
       logging: false,
       allowTaint: true,
       scrollX: 0,
       scrollY: 0,
-      width: 794
+      windowWidth: 794,
+      onclone: (clonedDoc) => {
+        const el = clonedDoc.getElementById('pdf-note-export-root');
+        if (el) {
+          el.style.opacity = '1';
+          el.style.visibility = 'visible';
+          el.style.display = 'block';
+        }
+      }
     });
 
-    document.body.removeChild(exportArea);
+    if (document.body.contains(exportArea)) {
+      document.body.removeChild(exportArea);
+    }
 
     const imgWidth = 210; // A4 width in mm
     const pageHeightMm = 297; // A4 height in mm
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
+    const pxPerMm = canvas.width / imgWidth;
+    const pageHeightPx = Math.floor(pageHeightMm * pxPerMm);
 
-    const doc = new jsPDF('p', 'mm', 'a4');
-    
-    // Height of 1 full page in canvas pixels (~1123px)
-    const pageHeightPixels = (canvas.width * 297) / 210; 
-    let sourceY = 0;
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
+    });
 
-    while (heightLeft > 0) {
+    let renderedHeightPx = 0;
+    let pageIndex = 0;
+
+    while (renderedHeightPx < canvas.height) {
+      const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedHeightPx);
+      if (sliceHeightPx <= 0) break;
+
       const pageCanvas = document.createElement('canvas');
       pageCanvas.width = canvas.width;
-      pageCanvas.height = Math.min(canvas.height - sourceY, pageHeightPixels);
-
-      if (pageCanvas.height <= 0) break;
+      pageCanvas.height = pageHeightPx; // Ensure standard full A4 canvas height
 
       const ctx = pageCanvas.getContext('2d');
       if (ctx) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
         ctx.drawImage(
           canvas,
-          0, sourceY, canvas.width, pageCanvas.height, // source dimensions
-          0, 0, pageCanvas.width, pageCanvas.height // destination dimensions
+          0, renderedHeightPx, canvas.width, sliceHeightPx,
+          0, 0, canvas.width, sliceHeightPx
         );
       }
 
-      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
-      
-      if (sourceY > 0) {
+      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.98);
+
+      if (pageIndex > 0) {
         doc.addPage();
       }
-      
-      const pageImgHeightMm = (pageCanvas.height * imgWidth) / canvas.width;
-      doc.addImage(pageImgData, 'JPEG', 0, 0, imgWidth, pageImgHeightMm);
 
-      sourceY += pageHeightPixels;
-      heightLeft -= pageImgHeightMm;
+      doc.addImage(pageImgData, 'JPEG', 0, 0, imgWidth, pageHeightMm);
+
+      renderedHeightPx += pageHeightPx;
+      pageIndex++;
     }
 
     await saveOrSharePdf(doc, noteTitle);
@@ -225,7 +263,7 @@ export async function downloadNoteAsPdf(title: string, contentHtmlOrText: string
       document.body.removeChild(exportArea);
     }
     
-    // Resilient simple fallback to keep the app working even in restricted iframe/browser sandbox
+    // Resilient fallback to keep the app working even in restricted iframe/browser sandbox
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
@@ -237,7 +275,7 @@ export async function downloadNoteAsPdf(title: string, contentHtmlOrText: string
     doc.line(16, 29, 194, 29);
     
     doc.setFontSize(11);
-    const rawText = contentHtmlOrText.replace(/<[^>]+>/g, '').trim() || '(Empty note)';
+    const rawText = cleanContent.replace(/<[^>]+>/g, '').trim() || '(Empty note)';
     const splitLines = doc.splitTextToSize(rawText, 178);
     doc.text(splitLines, 16, 38);
     
@@ -250,22 +288,31 @@ export async function downloadNoteAsPdf(title: string, contentHtmlOrText: string
  */
 export async function downloadQuizAsPdf(title: string, questions: QuizQuestion[]) {
   const quizTitle = title.trim() || 'MCQ Quiz & Test Paper';
+  const allQuestions = questions && questions.length > 0 ? questions : [];
 
-  // Create a beautifully formatted container inside the normal viewport flow but invisible to avoid offscreen rendering optimization bugs on mobile WebView
+  // Filter questions that have at least some question text or options
+  const activeQuestions = allQuestions.filter(
+    q => (q.question && q.question.trim()) || (q.optionA && q.optionA.trim())
+  );
+  const questionsToRender = activeQuestions.length > 0 ? activeQuestions : allQuestions;
+
+  // Create a wide container for 2-column layout (1100px width)
   const exportArea = document.createElement('div');
-  exportArea.style.position = 'absolute';
-  exportArea.style.left = '0';
+  exportArea.id = 'pdf-quiz-export-root';
+  exportArea.style.position = 'fixed';
   exportArea.style.top = '0';
-  exportArea.style.zIndex = '-9999';
-  exportArea.style.opacity = '0.001';
-  exportArea.style.pointerEvents = 'none';
-  exportArea.style.width = '1200px'; // Wide width for elegant 2-column layout
+  exportArea.style.left = '0';
+  exportArea.style.width = '1100px';
+  exportArea.style.zIndex = '999999';
   exportArea.style.backgroundColor = '#ffffff';
-  exportArea.style.color = '#111111';
-  exportArea.style.padding = '50px 60px';
-  exportArea.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif';
+  exportArea.style.color = '#111827';
+  exportArea.style.padding = '44px 50px';
+  exportArea.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
   exportArea.style.boxSizing = 'border-box';
   exportArea.style.wordBreak = 'break-word';
+  exportArea.style.opacity = '1';
+  exportArea.style.visibility = 'visible';
+  exportArea.style.pointerEvents = 'none';
 
   const dateStr = new Date().toLocaleDateString(undefined, {
     year: 'numeric',
@@ -274,31 +321,34 @@ export async function downloadQuizAsPdf(title: string, questions: QuizQuestion[]
   });
 
   // Divide the questions into two lists for left and right columns
-  const midIndex = Math.ceil(questions.length / 2);
-  const leftQuestions = questions.slice(0, midIndex);
-  const rightQuestions = questions.slice(midIndex);
+  const midIndex = Math.ceil(questionsToRender.length / 2);
+  const leftQuestions = questionsToRender.slice(0, midIndex);
+  const rightQuestions = questionsToRender.slice(midIndex);
 
   const renderQuestion = (q: QuizQuestion, displayIndex: number) => {
+    const cleanQText = sanitizeHtmlForPdf(q.question);
+    const cleanExpText = sanitizeHtmlForPdf(q.explanation);
+
     return `
       <div class="quiz-q-card">
         <div class="quiz-q-text">
           <span class="quiz-q-num">Q.${displayIndex}</span>
-          ${q.question || `<span class="empty-placeholder">Question ${displayIndex}</span>`}
+          ${cleanQText || `<span class="empty-placeholder">Question ${displayIndex}</span>`}
         </div>
         <div class="quiz-opts">
-          <div class="quiz-opt"><strong>A)</strong> ${q.optionA || '-'}</div>
-          <div class="quiz-opt"><strong>B)</strong> ${q.optionB || '-'}</div>
-          <div class="quiz-opt"><strong>C)</strong> ${q.optionC || '-'}</div>
-          <div class="quiz-opt"><strong>D)</strong> ${q.optionD || '-'}</div>
+          <div class="quiz-opt"><strong class="opt-label">A)</strong> ${q.optionA || '-'}</div>
+          <div class="quiz-opt"><strong class="opt-label">B)</strong> ${q.optionB || '-'}</div>
+          <div class="quiz-opt"><strong class="opt-label">C)</strong> ${q.optionC || '-'}</div>
+          <div class="quiz-opt"><strong class="opt-label">D)</strong> ${q.optionD || '-'}</div>
         </div>
         ${q.correctAnswer ? `
           <div class="quiz-ans">
             Ans: Option (${q.correctAnswer})
           </div>
         ` : ''}
-        ${q.explanation ? `
+        ${cleanExpText ? `
           <div class="quiz-exp">
-            <strong>Exp:</strong> ${q.explanation}
+            <strong>Exp:</strong> ${cleanExpText}
           </div>
         ` : ''}
       </div>
@@ -307,82 +357,89 @@ export async function downloadQuizAsPdf(title: string, questions: QuizQuestion[]
 
   exportArea.innerHTML = `
     <style>
+      #pdf-quiz-export-root, #pdf-quiz-export-root * {
+        box-sizing: border-box;
+      }
       .quiz-header {
-        margin-bottom: 24px;
-        border-bottom: 2px solid #e4e4e7;
-        padding-bottom: 16px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 14px;
       }
       .quiz-title {
-        font-size: 28px;
+        font-size: 26px;
         font-weight: 800;
-        color: #000000;
+        color: #000000 !important;
         margin: 0 0 6px 0;
         line-height: 1.25;
       }
       .quiz-meta {
-        font-size: 12px;
-        color: #71717a;
+        font-size: 11px;
+        color: #6b7280 !important;
         margin: 0;
-        font-weight: 600;
+        font-weight: 700;
       }
       .quiz-cols {
         display: flex;
-        gap: 48px;
+        gap: 36px;
       }
       .quiz-col {
         flex: 1;
         width: 50%;
       }
       .quiz-q-card {
-        margin-bottom: 24px;
-        padding-bottom: 18px;
-        border-bottom: 1px solid #f4f4f5;
-        page-break-inside: avoid;
+        margin-bottom: 18px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid #f3f4f6;
         break-inside: avoid;
+        page-break-inside: avoid;
       }
       .quiz-q-text {
-        font-size: 14.5px;
+        font-size: 13.5px;
         font-weight: 700;
-        color: #18181b;
-        margin-bottom: 10px;
-        line-height: 1.5;
+        color: #111827 !important;
+        margin-bottom: 8px;
+        line-height: 1.45;
       }
       .quiz-q-num {
         font-weight: 900;
-        margin-right: 4px;
-        color: #000000;
+        margin-right: 5px;
+        color: #000000 !important;
       }
       .quiz-opts {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        margin-bottom: 10px;
+        gap: 6px;
+        margin-bottom: 8px;
       }
       .quiz-opt {
-        font-size: 12px;
-        color: #3f3f46;
+        font-size: 11.5px;
+        color: #374151 !important;
         line-height: 1.4;
       }
-      .quiz-ans {
-        font-size: 11.5px;
+      .opt-label {
+        color: #111827 !important;
         font-weight: 700;
-        color: #16a34a;
+      }
+      .quiz-ans {
+        font-size: 11px;
+        font-weight: 800;
+        color: #15803d !important;
         background-color: #f0fdf4;
         border: 1px solid #bbf7d0;
         display: inline-block;
-        padding: 2px 8px;
+        padding: 2px 7px;
         border-radius: 4px;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
       }
       .quiz-exp {
-        font-size: 11.5px;
+        font-size: 11px;
         font-style: italic;
-        color: #71717a;
+        color: #6b7280 !important;
         margin-top: 4px;
         line-height: 1.4;
       }
       .empty-placeholder {
-        color: #a1a1aa;
+        color: #9ca3af !important;
         font-style: italic;
       }
       
@@ -392,14 +449,14 @@ export async function downloadQuizAsPdf(title: string, questions: QuizQuestion[]
       u { text-decoration: underline; }
       
       /* Custom Font Size mapping from browser execCommand font tags */
-      font[size="2"] { font-size: 12px !important; }
-      font[size="3"] { font-size: 14.5px !important; }
-      font[size="5"] { font-size: 18px !important; }
-      font[size="6"] { font-size: 22px !important; font-weight: 700; }
+      font[size="2"] { font-size: 11.5px !important; }
+      font[size="3"] { font-size: 13.5px !important; }
+      font[size="5"] { font-size: 17px !important; font-weight: 700; }
+      font[size="6"] { font-size: 20px !important; font-weight: 800; }
     </style>
     <div class="quiz-header">
       <h1 class="quiz-title">${quizTitle}</h1>
-      <p class="quiz-meta">Total Questions: ${questions.length} | Date: ${dateStr}</p>
+      <p class="quiz-meta">Total Questions: ${questionsToRender.length} | Date: ${dateStr}</p>
     </div>
     <div class="quiz-cols">
       <div class="quiz-col">
@@ -415,54 +472,72 @@ export async function downloadQuizAsPdf(title: string, questions: QuizQuestion[]
 
   try {
     const canvas = await html2canvas(exportArea, {
-      scale: 2, // Double resolution for ultra-sharp rendering
+      scale: 2, // 2x high resolution
       useCORS: true,
       backgroundColor: '#ffffff',
       logging: false,
       allowTaint: true,
       scrollX: 0,
       scrollY: 0,
-      width: 1200
+      windowWidth: 1100,
+      onclone: (clonedDoc) => {
+        const el = clonedDoc.getElementById('pdf-quiz-export-root');
+        if (el) {
+          el.style.opacity = '1';
+          el.style.visibility = 'visible';
+          el.style.display = 'block';
+        }
+      }
     });
 
-    document.body.removeChild(exportArea);
+    if (document.body.contains(exportArea)) {
+      document.body.removeChild(exportArea);
+    }
 
     const imgWidth = 210; // A4 width in mm
     const pageHeightMm = 297; // A4 height in mm
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
+    const pxPerMm = canvas.width / imgWidth;
+    const pageHeightPx = Math.floor(pageHeightMm * pxPerMm);
 
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const pageHeightPixels = (canvas.width * 297) / 210; 
-    let sourceY = 0;
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
+    });
 
-    while (heightLeft > 0) {
+    let renderedHeightPx = 0;
+    let pageIndex = 0;
+
+    while (renderedHeightPx < canvas.height) {
+      const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedHeightPx);
+      if (sliceHeightPx <= 0) break;
+
       const pageCanvas = document.createElement('canvas');
       pageCanvas.width = canvas.width;
-      pageCanvas.height = Math.min(canvas.height - sourceY, pageHeightPixels);
-
-      if (pageCanvas.height <= 0) break;
+      pageCanvas.height = pageHeightPx; // Full A4 page height
 
       const ctx = pageCanvas.getContext('2d');
       if (ctx) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
         ctx.drawImage(
           canvas,
-          0, sourceY, canvas.width, pageCanvas.height,
-          0, 0, pageCanvas.width, pageCanvas.height
+          0, renderedHeightPx, canvas.width, sliceHeightPx,
+          0, 0, canvas.width, sliceHeightPx
         );
       }
 
-      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
-      
-      if (sourceY > 0) {
+      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.98);
+
+      if (pageIndex > 0) {
         doc.addPage();
       }
-      
-      const pageImgHeightMm = (pageCanvas.height * imgWidth) / canvas.width;
-      doc.addImage(pageImgData, 'JPEG', 0, 0, imgWidth, pageImgHeightMm);
 
-      sourceY += pageHeightPixels;
-      heightLeft -= pageImgHeightMm;
+      doc.addImage(pageImgData, 'JPEG', 0, 0, imgWidth, pageHeightMm);
+
+      renderedHeightPx += pageHeightPx;
+      pageIndex++;
     }
 
     await saveOrSharePdf(doc, quizTitle);
@@ -478,22 +553,22 @@ export async function downloadQuizAsPdf(title: string, questions: QuizQuestion[]
     doc.setFontSize(14);
     doc.text(quizTitle, 16, 20);
     doc.setFontSize(10);
-    doc.text(`Total Questions: ${questions.length}`, 16, 26);
+    doc.text(`Total Questions: ${questionsToRender.length}`, 16, 26);
     doc.line(16, 29, 194, 29);
     
     let currentY = 38;
-    questions.forEach((q, idx) => {
+    questionsToRender.forEach((q, idx) => {
       if (currentY + 20 > 280) {
         doc.addPage();
         currentY = 20;
       }
       doc.setFont('helvetica', 'bold');
-      doc.text(`Q.${idx + 1} ${q.question.replace(/<[^>]+>/g, '')}`, 16, currentY);
+      doc.text(`Q.${idx + 1} ${(q.question || '').replace(/<[^>]+>/g, '')}`, 16, currentY);
       currentY += 6;
       doc.setFont('helvetica', 'normal');
-      doc.text(`A) ${q.optionA}   B) ${q.optionB}`, 20, currentY);
+      doc.text(`A) ${q.optionA || '-'}   B) ${q.optionB || '-'}`, 20, currentY);
       currentY += 5;
-      doc.text(`C) ${q.optionC}   D) ${q.optionD}`, 20, currentY);
+      doc.text(`C) ${q.optionC || '-'}   D) ${q.optionD || '-'}`, 20, currentY);
       currentY += 5;
       if (q.correctAnswer) {
         doc.text(`Ans: Option (${q.correctAnswer})`, 20, currentY);
