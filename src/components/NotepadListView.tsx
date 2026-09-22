@@ -2,12 +2,14 @@ import React, { useState, useRef } from 'react';
 import { Note } from '../types';
 import { Trash2, Search, Clock, Pin, MoreVertical, X, Sparkles, Download } from 'lucide-react';
 import { downloadNoteAsPdf, downloadQuizAsPdf } from '../utils/pdfExport';
+import { LanguageCode, getTranslation } from '../utils/translations';
 
 interface NotepadListViewProps {
   notes: Note[];
   searchQuery: string;
   activeNoteId?: string;
   darkMode?: boolean;
+  language?: LanguageCode;
   onSelectNote: (note: Note) => void;
   onDeleteNote: (id: string, e?: React.MouseEvent) => void;
   onTogglePin: (id: string, e?: React.MouseEvent) => void;
@@ -19,6 +21,7 @@ export default function NotepadListView({
   searchQuery,
   activeNoteId,
   darkMode = false,
+  language = 'hi',
   onSelectNote,
   onDeleteNote,
   onTogglePin,
@@ -61,7 +64,7 @@ export default function NotepadListView({
         <div className="max-w-md mx-auto py-16 text-center space-y-3 px-4 safe-bottom-pad">
           <Search className={`w-10 h-10 mx-auto ${darkMode ? 'text-neutral-700' : 'text-neutral-300'}`} />
           <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>
-            No notes match "{searchQuery}"
+            "{searchQuery}" {getTranslation(language, 'noNotesMatch')}
           </p>
           <button
             onClick={onClearSearch}
@@ -69,7 +72,7 @@ export default function NotepadListView({
               darkMode ? 'text-neutral-400 hover:text-white' : 'text-neutral-600 hover:text-black'
             }`}
           >
-            Clear Search
+            {getTranslation(language, 'clearSearch')}
           </button>
         </div>
       );
@@ -77,10 +80,10 @@ export default function NotepadListView({
     return (
       <div className="max-w-md mx-auto py-24 text-center space-y-3 px-4 safe-bottom-pad">
         <p className={`text-lg sm:text-xl font-bold ${darkMode ? 'text-white' : 'text-black'}`}>
-          No saved notes yet
+          {getTranslation(language, 'noSavedNotes')}
         </p>
         <p className="text-xs sm:text-sm text-neutral-400">
-          Tap the (+) button below to create a Note or Quiz
+          {getTranslation(language, 'noSavedNotesDesc')}
         </p>
       </div>
     );
@@ -128,7 +131,7 @@ export default function NotepadListView({
                 darkMode ? 'bg-neutral-800 text-white' : 'bg-neutral-100 text-black'
               }`}>
                 <Pin className={`w-2.5 h-2.5 ${darkMode ? 'fill-white' : 'fill-black'}`} />
-                <span>Pinned</span>
+                <span>{getTranslation(language, 'pinnedLabel')}</span>
               </span>
             )}
             {isQuiz && (
@@ -140,14 +143,14 @@ export default function NotepadListView({
               </span>
             )}
             <h4 className={`font-bold text-base sm:text-lg truncate ${darkMode ? 'text-white' : 'text-black'}`}>
-              {note.title.trim() || (isQuiz ? 'Untitled Quiz' : 'Untitled Note')}
+              {note.title.trim() || (isQuiz ? getTranslation(language, 'untitledQuiz') : getTranslation(language, 'untitledNote'))}
             </h4>
           </div>
 
           <p className="text-xs sm:text-sm text-neutral-400 line-clamp-2 mt-1 leading-relaxed">
             {isQuiz 
-              ? (firstQ ? `Q.1 ${firstQ}` : `${questionCount} MCQ Questions`) 
-              : (note.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() || '(Empty note)')
+              ? (firstQ ? `Q.1 ${firstQ.replace(/<[^>]+>/g, ' ')}` : `${questionCount} MCQ Questions`) 
+              : (note.content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() || getTranslation(language, 'emptyNote'))
             }
           </p>
 
@@ -169,7 +172,7 @@ export default function NotepadListView({
                 ? 'hover:bg-neutral-800 active:bg-neutral-700 text-neutral-500 hover:text-white' 
                 : 'hover:bg-neutral-200 active:bg-neutral-300 text-neutral-400 hover:text-black'
             }`}
-            title="Options (Pin / Delete)"
+            title={getTranslation(language, 'pin')}
             aria-label="Note Options"
           >
             <MoreVertical className="w-4 h-4" />
@@ -186,7 +189,7 @@ export default function NotepadListView({
         darkMode ? 'border-neutral-800 text-neutral-400' : 'border-neutral-200 text-neutral-500'
       }`}>
         <span>
-          {searchQuery ? `Search Results (${notes.length})` : `Saved Notes (${notes.length})`}
+          {searchQuery ? `${getTranslation(language, 'searchResults')} (${notes.length})` : `${getTranslation(language, 'savedNotes')} (${notes.length})`}
         </span>
         {searchQuery && (
           <button
@@ -195,7 +198,7 @@ export default function NotepadListView({
               darkMode ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-black'
             }`}
           >
-            clear search
+            {getTranslation(language, 'clearSearch')}
           </button>
         )}
       </div>
@@ -205,7 +208,7 @@ export default function NotepadListView({
         <div className="space-y-1.5">
           <div className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center space-x-1 px-1">
             <Pin className="w-3 h-3 fill-neutral-400" />
-            <span>Pinned</span>
+            <span>{getTranslation(language, 'pinned')}</span>
           </div>
           <div className={`divide-y ${darkMode ? 'divide-neutral-850' : 'divide-neutral-100'}`}>
             {pinnedNotes.map(renderNoteCard)}
@@ -217,7 +220,7 @@ export default function NotepadListView({
       <div className="space-y-1.5">
         {!searchQuery && pinnedNotes.length > 0 && unpinnedNotes.length > 0 && (
           <div className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-neutral-400 pt-3 px-1">
-            <span>All Notes</span>
+            <span>{getTranslation(language, 'allNotes')}</span>
           </div>
         )}
         <div className={`divide-y ${darkMode ? 'divide-neutral-850' : 'divide-neutral-100'}`}>
@@ -244,7 +247,7 @@ export default function NotepadListView({
                   {menuNote.type === 'quiz' ? 'Quiz Options' : 'Note Options'}
                 </span>
                 <h3 className={`font-bold text-base sm:text-lg truncate mt-0.5 ${darkMode ? 'text-white' : 'text-black'}`}>
-                  {menuNote.title.trim() || (menuNote.type === 'quiz' ? 'Untitled Quiz' : 'Untitled Note')}
+                  {menuNote.title.trim() || (menuNote.type === 'quiz' ? getTranslation(language, 'untitledQuiz') : getTranslation(language, 'untitledNote'))}
                 </h3>
               </div>
               <button 
@@ -276,7 +279,7 @@ export default function NotepadListView({
                 }`}
               >
                 <Download className="w-5 h-5" />
-                <span>Download as PDF</span>
+                <span>{getTranslation(language, 'downloadPdf')}</span>
               </button>
 
               <button
@@ -291,13 +294,18 @@ export default function NotepadListView({
                 }`}
               >
                 <Pin className={`w-5 h-5 ${menuNote.isPinned ? (darkMode ? 'fill-white' : 'fill-black') : ''}`} />
-                <span>{menuNote.isPinned ? 'Unpin' : 'Pin to Top'}</span>
+                <span>{menuNote.isPinned ? getTranslation(language, 'unpin') : getTranslation(language, 'pinToTop')}</span>
               </button>
 
               <button
                 onClick={(e) => {
-                  onDeleteNote(menuNote.id, e);
-                  setMenuNote(null);
+                  const confirmMsg = menuNote.type === 'quiz' 
+                    ? getTranslation(language, 'deleteConfirmQuiz')
+                    : getTranslation(language, 'deleteConfirmNote');
+                  if (window.confirm(confirmMsg)) {
+                    onDeleteNote(menuNote.id, e);
+                    setMenuNote(null);
+                  }
                 }}
                 className={`w-full min-h-[50px] flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm sm:text-base transition cursor-pointer ${
                   darkMode 
@@ -306,7 +314,7 @@ export default function NotepadListView({
                 }`}
               >
                 <Trash2 className="w-5 h-5" />
-                <span>Delete</span>
+                <span>{getTranslation(language, 'delete')}</span>
               </button>
             </div>
 
@@ -317,7 +325,7 @@ export default function NotepadListView({
                 darkMode ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-black'
               }`}
             >
-              Cancel
+              {getTranslation(language, 'cancel')}
             </button>
           </div>
         </div>

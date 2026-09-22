@@ -11,13 +11,16 @@ import {
   Type, 
   Palette, 
   Highlighter, 
-  RotateCcw
+  RotateCcw,
+  Languages
 } from 'lucide-react';
 import { downloadNoteAsPdf } from '../utils/pdfExport';
+import { LanguageCode, getTranslation, offlineTransliterate } from '../utils/translations';
 
 interface NotepadEditorProps {
   note: Note;
   darkMode?: boolean;
+  language?: LanguageCode;
   onUpdateNote: (updated: Note) => void;
   onBack: () => void;
   onDeleteNote: (id: string) => void;
@@ -63,6 +66,7 @@ const FONT_SIZES = [
 export default function NotepadEditor({
   note,
   darkMode = false,
+  language = 'hi',
   onUpdateNote,
   onBack,
   onDeleteNote,
@@ -139,6 +143,28 @@ export default function NotepadEditor({
     executeCommand('removeFormat');
   };
 
+  // 100% Offline Script Transliterate Content for Active Language
+  const handleOfflineTranslateNote = () => {
+    if (language === 'hi' || language === 'en') return;
+    
+    // Transliterate title and content offline
+    const convertedTitle = offlineTransliterate(note.title, language);
+    let convertedContent = note.content;
+    if (editorRef.current) {
+      const currentText = editorRef.current.innerText;
+      const transliteratedText = offlineTransliterate(currentText, language);
+      editorRef.current.innerText = transliteratedText;
+      convertedContent = editorRef.current.innerHTML;
+    }
+    
+    onUpdateNote({
+      ...note,
+      title: convertedTitle,
+      content: convertedContent,
+      updatedAt: new Date().toISOString()
+    });
+  };
+
   // Compute words and chars by stripping HTML
   const rawText = note.content ? note.content.replace(/<[^>]+>/g, ' ').trim() : '';
   const words = rawText ? rawText.split(/\s+/).filter(Boolean).length : 0;
@@ -160,11 +186,11 @@ export default function NotepadEditor({
               ? 'text-neutral-300 hover:text-white hover:bg-neutral-800 active:bg-neutral-700' 
               : 'text-neutral-700 hover:text-black hover:bg-neutral-100 active:bg-neutral-200'
           }`}
-          title="Back to All Notes"
-          aria-label="Back to All Notes"
+          title={getTranslation(language, 'back')}
+          aria-label={getTranslation(language, 'back')}
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>All Saved Notes</span>
+          <span>{getTranslation(language, 'allSavedNotes')}</span>
         </button>
 
         <div className="flex items-center space-x-1.5 sm:space-x-2">
@@ -177,11 +203,11 @@ export default function NotepadEditor({
                 ? 'bg-neutral-800 hover:bg-neutral-750 text-white border border-neutral-700' 
                 : 'bg-black hover:bg-neutral-800 text-white'
             }`}
-            title={isDownloading ? "Generating PDF..." : "Download Note as PDF"}
+            title={isDownloading ? getTranslation(language, 'downloading') : getTranslation(language, 'downloadPdf')}
             aria-label="Download Note as PDF"
           >
             <Download className={`w-3.5 h-3.5 ${isDownloading ? 'animate-spin' : ''}`} />
-            <span className="hidden xs:inline sm:inline">{isDownloading ? 'Downloading...' : 'PDF'}</span>
+            <span className="hidden xs:inline sm:inline">{isDownloading ? getTranslation(language, 'downloading') : 'PDF'}</span>
           </button>
 
           {/* Pin Toggle Button */}
@@ -192,16 +218,16 @@ export default function NotepadEditor({
                 ? (darkMode ? 'bg-white text-black font-bold' : 'bg-black text-white font-bold')
                 : (darkMode ? 'bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700' : 'bg-neutral-100 text-neutral-700 hover:text-black hover:bg-neutral-200')
             }`}
-            title={note.isPinned ? 'Unpin note' : 'Pin note to top'}
+            title={note.isPinned ? getTranslation(language, 'unpin') : getTranslation(language, 'pin')}
           >
             <Pin className={`w-3.5 h-3.5 ${note.isPinned ? (darkMode ? 'fill-black' : 'fill-white') : ''}`} />
-            <span>{note.isPinned ? 'Pinned' : 'Pin'}</span>
+            <span>{note.isPinned ? getTranslation(language, 'pinnedLabel') : getTranslation(language, 'pin')}</span>
           </button>
 
           {/* Delete Button */}
           <button
             onClick={() => {
-              if (window.confirm('Delete this note?')) {
+              if (window.confirm(getTranslation(language, 'deleteConfirmNote'))) {
                 onDeleteNote(note.id);
               }
             }}
@@ -210,7 +236,7 @@ export default function NotepadEditor({
                 ? 'hover:bg-neutral-800 text-neutral-400 hover:text-red-400' 
                 : 'hover:bg-neutral-100 text-neutral-400 hover:text-red-600 active:bg-red-50'
             }`}
-            title="Delete Note"
+            title={getTranslation(language, 'deleteNote')}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -222,7 +248,7 @@ export default function NotepadEditor({
         type="text"
         value={note.title}
         onChange={handleTitleChange}
-        placeholder="Title"
+        placeholder={getTranslation(language, 'noteTitlePlaceholder')}
         className={`w-full bg-transparent font-black text-2xl sm:text-3xl md:text-4xl focus:outline-none tracking-tight pb-3 ${
           darkMode ? 'text-white placeholder-neutral-600' : 'text-black placeholder-neutral-300'
         }`}
@@ -244,7 +270,7 @@ export default function NotepadEditor({
           className={`w-8 h-8 rounded-lg flex items-center justify-center font-black transition cursor-pointer ${
             darkMode ? 'hover:bg-neutral-800 text-white' : 'hover:bg-neutral-100 text-black'
           }`}
-          title="Bold (Ctrl+B)"
+          title={getTranslation(language, 'bold')}
         >
           <Bold className="w-4 h-4 stroke-[3]" />
         </button>
@@ -259,7 +285,7 @@ export default function NotepadEditor({
           className={`w-8 h-8 rounded-lg flex items-center justify-center italic font-serif transition cursor-pointer ${
             darkMode ? 'hover:bg-neutral-800 text-white' : 'hover:bg-neutral-100 text-black'
           }`}
-          title="Italic (Ctrl+I)"
+          title={getTranslation(language, 'italic')}
         >
           <Italic className="w-4 h-4 stroke-[2.5]" />
         </button>
@@ -274,7 +300,7 @@ export default function NotepadEditor({
           className={`w-8 h-8 rounded-lg flex items-center justify-center transition cursor-pointer ${
             darkMode ? 'hover:bg-neutral-800 text-white' : 'hover:bg-neutral-100 text-black'
           }`}
-          title="Underline (Ctrl+U)"
+          title={getTranslation(language, 'underline')}
         >
           <Underline className="w-4 h-4 stroke-[2.5]" />
         </button>
@@ -295,10 +321,10 @@ export default function NotepadEditor({
                 ? (darkMode ? 'bg-white text-black' : 'bg-black text-white') 
                 : (darkMode ? 'hover:bg-neutral-800 text-neutral-300' : 'hover:bg-neutral-100 text-neutral-800')
             }`}
-            title="Text Size"
+            title={getTranslation(language, 'size')}
           >
             <Type className="w-3.5 h-3.5" />
-            <span>Size</span>
+            <span>{getTranslation(language, 'size')}</span>
           </button>
 
           {showSizePicker && (
@@ -339,17 +365,17 @@ export default function NotepadEditor({
                 ? (darkMode ? 'bg-white text-black' : 'bg-black text-white') 
                 : (darkMode ? 'hover:bg-neutral-800 text-neutral-300' : 'hover:bg-neutral-100 text-neutral-800')
             }`}
-            title="Text Color"
+            title={getTranslation(language, 'color')}
           >
             <Palette className="w-3.5 h-3.5" />
-            <span>Color</span>
+            <span>{getTranslation(language, 'color')}</span>
           </button>
 
           {showColorPicker && (
             <div className={`absolute top-10 left-0 z-30 border rounded-xl p-2.5 shadow-xl w-48 space-y-2 animate-in fade-in duration-150 ${
               darkMode ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-neutral-200 text-black'
             }`}>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block">Text Colors</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block">{getTranslation(language, 'color')}</span>
               <div className="grid grid-cols-4 gap-2">
                 {currentColors.map(c => (
                   <button
@@ -384,17 +410,17 @@ export default function NotepadEditor({
                 ? (darkMode ? 'bg-white text-black' : 'bg-black text-white') 
                 : (darkMode ? 'hover:bg-neutral-800 text-neutral-300' : 'hover:bg-neutral-100 text-neutral-800')
             }`}
-            title="Highlight Text"
+            title={getTranslation(language, 'highlight')}
           >
             <Highlighter className="w-3.5 h-3.5" />
-            <span>Highlight</span>
+            <span>{getTranslation(language, 'highlight')}</span>
           </button>
 
           {showHighlightPicker && (
             <div className={`absolute top-10 left-0 z-30 border rounded-xl p-2.5 shadow-xl w-48 space-y-2 animate-in fade-in duration-150 ${
               darkMode ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-neutral-200 text-black'
             }`}>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block">Highlight Colors</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block">{getTranslation(language, 'highlight')}</span>
               <div className="grid grid-cols-3 gap-2">
                 {HIGHLIGHT_COLORS.map(h => (
                   <button
@@ -425,10 +451,27 @@ export default function NotepadEditor({
           className={`h-8 px-2 rounded-lg transition cursor-pointer text-xs flex items-center space-x-1 ${
             darkMode ? 'hover:bg-neutral-800 text-neutral-500 hover:text-white' : 'hover:bg-neutral-100 text-neutral-400 hover:text-black'
           }`}
-          title="Clear formatting"
+          title={getTranslation(language, 'clearFormat')}
         >
           <RotateCcw className="w-3 h-3" />
         </button>
+
+        {/* Optional 100% Offline Script Converter when Punjabi / Urdu / Sanskrit is selected */}
+        {(language === 'pa' || language === 'ur' || language === 'sa') && (
+          <button
+            type="button"
+            onClick={handleOfflineTranslateNote}
+            className={`h-8 px-2.5 rounded-lg transition cursor-pointer text-xs font-bold flex items-center space-x-1.5 ml-auto ${
+              darkMode 
+                ? 'bg-sky-950/60 text-sky-300 hover:bg-sky-900/80 border border-sky-800/60' 
+                : 'bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200'
+            }`}
+            title={getTranslation(language, 'offlineTranslate')}
+          >
+            <Languages className="w-3.5 h-3.5 text-sky-500" />
+            <span className="hidden sm:inline">{getTranslation(language, 'translateContent')}</span>
+          </button>
+        )}
       </div>
 
       {/* Main Formatted Writing Canvas */}
@@ -437,7 +480,7 @@ export default function NotepadEditor({
         contentEditable
         onInput={handleInput}
         onBlur={handleInput}
-        data-placeholder="Start typing your note here..."
+        data-placeholder={getTranslation(language, 'editorPlaceholder')}
         className={`w-full min-h-[450px] bg-transparent text-base sm:text-lg focus:outline-none leading-relaxed font-normal empty:before:content-[attr(data-placeholder)] empty:before:pointer-events-none pb-12 ${
           darkMode 
             ? 'text-white empty:before:text-neutral-600' 
@@ -449,8 +492,8 @@ export default function NotepadEditor({
       <div className={`mt-8 pt-4 border-t flex items-center justify-between text-xs select-none ${
         darkMode ? 'border-neutral-800 text-neutral-500' : 'border-neutral-100 text-neutral-400'
       }`}>
-        <span>{words} words • {chars} characters</span>
-        <span className={`font-medium ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>Auto-saved</span>
+        <span>{words} {getTranslation(language, 'words')} • {chars} {getTranslation(language, 'characters')}</span>
+        <span className={`font-medium ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>{getTranslation(language, 'autoSaved')}</span>
       </div>
     </div>
   );

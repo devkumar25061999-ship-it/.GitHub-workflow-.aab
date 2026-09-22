@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Note, QuizQuestion } from '../types';
-import { ArrowLeft, Trash2, Pin, Download, Plus, CheckCircle2, FileText, Sparkles } from 'lucide-react';
+import { ArrowLeft, Trash2, Pin, Download, Plus, CheckCircle2, FileText, Sparkles, Languages } from 'lucide-react';
 import { downloadQuizAsPdf } from '../utils/pdfExport';
+import { LanguageCode, getTranslation, offlineTransliterate } from '../utils/translations';
 
 interface QuizRichInputProps {
   value: string;
@@ -67,13 +68,13 @@ function QuizRichInput({
         ? (darkMode ? 'border-neutral-500 ring-1 ring-neutral-500 bg-neutral-800' : 'border-neutral-900 ring-1 ring-neutral-900 bg-white')
         : (darkMode ? 'bg-neutral-800/80 border-neutral-700' : 'bg-neutral-50 border-neutral-200')
     }`}>
-      {/* Inline/Static formatting toolbar (Bold, Italic, Text Color) positioned safely as a header */}
+      {/* Inline formatting toolbar positioned as a clean header */}
       {isFocused && (
         <div 
           className={`flex items-center space-x-1.5 px-2.5 py-1.5 border-b select-none ${
             darkMode ? 'bg-neutral-850 border-neutral-700' : 'bg-neutral-100 border-neutral-200'
           }`}
-          onMouseDown={(e) => e.preventDefault()} // Prevent losing focus from input
+          onMouseDown={(e) => e.preventDefault()}
         >
           {/* Bold Button */}
           <button
@@ -147,7 +148,6 @@ function QuizRichInput({
           onInput={handleInput}
           onFocus={() => setIsFocused(true)}
           onBlur={() => {
-            // Delay so that color picker option clicks register before toolbar hides
             setTimeout(() => {
               setIsFocused(false);
               setShowColorPicker(false);
@@ -170,6 +170,7 @@ function QuizRichInput({
 interface QuizEditorProps {
   note: Note;
   darkMode?: boolean;
+  language?: LanguageCode;
   onUpdateNote: (updated: Note) => void;
   onBack: () => void;
   onDeleteNote: (id: string) => void;
@@ -179,6 +180,7 @@ interface QuizEditorProps {
 export default function QuizEditor({
   note,
   darkMode = false,
+  language = 'hi',
   onUpdateNote,
   onBack,
   onDeleteNote,
@@ -217,7 +219,7 @@ export default function QuizEditor({
 
   const handleAddQuestion = () => {
     if (questions.length >= 100) {
-      alert('Maximum 100 questions per quiz reached.');
+      alert(getTranslation(language, 'maxQuestionsReached'));
       return;
     }
     const newQ: QuizQuestion = {
@@ -284,6 +286,29 @@ export default function QuizEditor({
     });
   };
 
+  // 100% Offline Script Transliterate Quiz Questions
+  const handleOfflineTranslateQuiz = () => {
+    if (language === 'hi' || language === 'en') return;
+
+    const convertedTitle = offlineTransliterate(note.title, language);
+    const convertedQuestions = questions.map(q => ({
+      ...q,
+      question: offlineTransliterate(q.question, language),
+      optionA: offlineTransliterate(q.optionA, language),
+      optionB: offlineTransliterate(q.optionB, language),
+      optionC: offlineTransliterate(q.optionC, language),
+      optionD: offlineTransliterate(q.optionD, language),
+      explanation: offlineTransliterate(q.explanation, language),
+    }));
+
+    onUpdateNote({
+      ...note,
+      title: convertedTitle,
+      questions: convertedQuestions,
+      updatedAt: new Date().toISOString()
+    });
+  };
+
   const [isDownloading, setIsDownloading] = useState(false);
 
   const handleDownloadPdf = async () => {
@@ -311,14 +336,30 @@ export default function QuizEditor({
               ? 'text-neutral-300 hover:text-white hover:bg-neutral-800 active:bg-neutral-700' 
               : 'text-neutral-700 hover:text-black hover:bg-neutral-100 active:bg-neutral-200'
           }`}
-          title="Back to All Notes"
-          aria-label="Back to All Notes"
+          title={getTranslation(language, 'back')}
+          aria-label={getTranslation(language, 'back')}
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>All Saved Notes</span>
+          <span>{getTranslation(language, 'allSavedNotes')}</span>
         </button>
 
         <div className="flex items-center space-x-2">
+          {/* Offline Script Transliterate Button */}
+          {(language === 'pa' || language === 'ur' || language === 'sa') && (
+            <button
+              onClick={handleOfflineTranslateQuiz}
+              className={`min-h-[40px] px-3 rounded-xl font-bold text-xs flex items-center space-x-1.5 transition cursor-pointer border ${
+                darkMode 
+                  ? 'bg-sky-950/60 text-sky-300 hover:bg-sky-900 border-sky-800' 
+                  : 'bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-200'
+              }`}
+              title={getTranslation(language, 'offlineTranslate')}
+            >
+              <Languages className="w-4 h-4 text-sky-500" />
+              <span className="hidden sm:inline">{getTranslation(language, 'translateContent')}</span>
+            </button>
+          )}
+
           {/* Download PDF Button */}
           <button
             onClick={handleDownloadPdf}
@@ -326,10 +367,10 @@ export default function QuizEditor({
             className={`min-h-[40px] px-3.5 rounded-xl font-bold text-xs sm:text-sm flex items-center space-x-1.5 shadow-md active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed transition cursor-pointer ${
               darkMode ? 'bg-white hover:bg-neutral-200 text-black' : 'bg-black hover:bg-neutral-800 text-white'
             }`}
-            title={isDownloading ? "Generating PDF..." : "Download 2-Column A4 PDF"}
+            title={isDownloading ? getTranslation(language, 'downloading') : getTranslation(language, 'downloadPdf')}
           >
             <Download className={`w-4 h-4 ${isDownloading ? 'animate-spin' : ''}`} />
-            <span>{isDownloading ? 'Downloading...' : 'Download PDF'}</span>
+            <span>{isDownloading ? getTranslation(language, 'downloading') : getTranslation(language, 'downloadPdf')}</span>
           </button>
 
           {/* Pin Toggle Button */}
@@ -340,23 +381,23 @@ export default function QuizEditor({
                 ? (darkMode ? 'bg-neutral-700 text-white font-bold' : 'bg-neutral-200 text-black font-bold')
                 : (darkMode ? 'bg-neutral-850 text-neutral-300 hover:text-white hover:bg-neutral-800' : 'bg-neutral-100 text-neutral-700 hover:text-black hover:bg-neutral-200')
             }`}
-            title={note.isPinned ? 'Unpin note' : 'Pin note'}
+            title={note.isPinned ? getTranslation(language, 'unpin') : getTranslation(language, 'pin')}
           >
             <Pin className={`w-3.5 h-3.5 ${note.isPinned ? (darkMode ? 'fill-white' : 'fill-black') : ''}`} />
-            <span className="hidden sm:inline">{note.isPinned ? 'Pinned' : 'Pin'}</span>
+            <span className="hidden sm:inline">{note.isPinned ? getTranslation(language, 'pinnedLabel') : getTranslation(language, 'pin')}</span>
           </button>
 
           {/* Delete Button */}
           <button
             onClick={() => {
-              if (window.confirm('Delete this quiz?')) {
+              if (window.confirm(getTranslation(language, 'deleteConfirmQuiz'))) {
                 onDeleteNote(note.id);
               }
             }}
             className={`min-h-[40px] min-w-[40px] p-2 rounded-xl transition cursor-pointer flex items-center justify-center ${
               darkMode ? 'hover:bg-neutral-800 text-neutral-400 hover:text-red-400' : 'hover:bg-neutral-100 text-neutral-400 hover:text-red-600'
             }`}
-            title="Delete Quiz"
+            title={getTranslation(language, 'deleteQuiz')}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -373,7 +414,7 @@ export default function QuizEditor({
             <span>MCQ Quiz Format</span>
           </span>
           <span className="text-xs sm:text-sm font-bold text-neutral-400">
-            {questions.length} / 100 Questions
+            {questions.length} / 100 {getTranslation(language, 'questions')}
           </span>
         </div>
 
@@ -381,7 +422,7 @@ export default function QuizEditor({
           type="text"
           value={note.title}
           onChange={handleTitleChange}
-          placeholder="Quiz / Test Paper Title (e.g. 100 Science Mock Test)"
+          placeholder={getTranslation(language, 'quizTitlePlaceholder')}
           className={`w-full bg-transparent font-black text-2xl sm:text-3xl md:text-4xl focus:outline-none tracking-tight pt-1 ${
             darkMode ? 'text-white placeholder-neutral-600' : 'text-black placeholder-neutral-300'
           }`}
@@ -407,7 +448,7 @@ export default function QuizEditor({
               <QuizRichInput
                 value={q.question}
                 onChange={(val) => handleUpdateQuestion(qIndex, { question: val })}
-                placeholder="Enter question text..."
+                placeholder={getTranslation(language, 'enterQuestionPlaceholder')}
                 darkMode={darkMode}
                 className={darkMode ? 'text-white' : 'text-black'}
               />
@@ -426,7 +467,7 @@ export default function QuizEditor({
             {/* 2. Options A, B, C, D */}
             <div className="space-y-2">
               <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
-                Options
+                {getTranslation(language, 'options')}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -443,7 +484,7 @@ export default function QuizEditor({
                     type="text"
                     value={q.optionA}
                     onChange={(e) => handleUpdateQuestion(qIndex, { optionA: e.target.value })}
-                    placeholder="Option A"
+                    placeholder={getTranslation(language, 'optionA')}
                     className={`w-full bg-transparent text-xs sm:text-sm focus:outline-none ${
                       darkMode ? 'text-white placeholder-neutral-500' : 'text-black placeholder-neutral-400'
                     }`}
@@ -463,7 +504,7 @@ export default function QuizEditor({
                     type="text"
                     value={q.optionB}
                     onChange={(e) => handleUpdateQuestion(qIndex, { optionB: e.target.value })}
-                    placeholder="Option B"
+                    placeholder={getTranslation(language, 'optionB')}
                     className={`w-full bg-transparent text-xs sm:text-sm focus:outline-none ${
                       darkMode ? 'text-white placeholder-neutral-500' : 'text-black placeholder-neutral-400'
                     }`}
@@ -483,7 +524,7 @@ export default function QuizEditor({
                     type="text"
                     value={q.optionC}
                     onChange={(e) => handleUpdateQuestion(qIndex, { optionC: e.target.value })}
-                    placeholder="Option C"
+                    placeholder={getTranslation(language, 'optionC')}
                     className={`w-full bg-transparent text-xs sm:text-sm focus:outline-none ${
                       darkMode ? 'text-white placeholder-neutral-500' : 'text-black placeholder-neutral-400'
                     }`}
@@ -503,7 +544,7 @@ export default function QuizEditor({
                     type="text"
                     value={q.optionD}
                     onChange={(e) => handleUpdateQuestion(qIndex, { optionD: e.target.value })}
-                    placeholder="Option D"
+                    placeholder={getTranslation(language, 'optionD')}
                     className={`w-full bg-transparent text-xs sm:text-sm focus:outline-none ${
                       darkMode ? 'text-white placeholder-neutral-500' : 'text-black placeholder-neutral-400'
                     }`}
@@ -519,14 +560,14 @@ export default function QuizEditor({
               <div className="flex items-center space-x-2">
                 <CheckCircle2 className={`w-4 h-4 shrink-0 ${darkMode ? 'text-neutral-400' : 'text-neutral-700'}`} />
                 <span className={`text-xs sm:text-sm font-bold ${darkMode ? 'text-white' : 'text-black'}`}>
-                  Correct Answer:
+                  {getTranslation(language, 'correctAnswer')}
                 </span>
                 {q.correctAnswer ? (
                   <span className="text-xs font-black text-green-500 bg-green-950/60 px-2 py-0.5 rounded border border-green-800">
                     Option ({q.correctAnswer})
                   </span>
                 ) : (
-                  <span className="text-xs text-neutral-500 italic">Select correct option</span>
+                  <span className="text-xs text-neutral-500 italic">{getTranslation(language, 'selectCorrectOption')}</span>
                 )}
               </div>
 
@@ -542,7 +583,7 @@ export default function QuizEditor({
                         ? (darkMode ? 'bg-white text-black shadow-xs' : 'bg-black text-white shadow-xs')
                         : (darkMode ? 'bg-neutral-800 border border-neutral-700 text-neutral-300 hover:bg-neutral-700' : 'bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-200')
                     }`}
-                    title={`Mark Option ${opt} as Correct Answer`}
+                    title={`${getTranslation(language, 'markCorrect')} (${opt})`}
                   >
                     {opt}
                   </button>
@@ -553,12 +594,12 @@ export default function QuizEditor({
             {/* 4. Explanation */}
             <div className="space-y-1.5">
               <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
-                Explanation
+                {getTranslation(language, 'explanation')}
               </span>
               <QuizRichInput
                 value={q.explanation}
                 onChange={(val) => handleUpdateQuestion(qIndex, { explanation: val })}
-                placeholder="Write explanation here (optional)..."
+                placeholder={getTranslation(language, 'explanationPlaceholder')}
                 darkMode={darkMode}
                 className={darkMode ? 'text-neutral-200' : 'text-neutral-800'}
                 minHeightClass="min-h-[48px]"
@@ -581,7 +622,7 @@ export default function QuizEditor({
             }`}
           >
             <Plus className="w-5 h-5 stroke-[2.5]" />
-            <span>Add Question {questions.length + 1} (Max 100)</span>
+            <span>{getTranslation(language, 'addQuestion')} ({questions.length + 1})</span>
           </button>
 
           <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
@@ -592,7 +633,7 @@ export default function QuizEditor({
                 darkMode ? 'bg-neutral-850 hover:bg-neutral-800 text-neutral-300' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800'
               }`}
             >
-              +5 Questions
+              {getTranslation(language, 'bulkAdd5')}
             </button>
             <button
               onClick={() => handleBulkAddQuestions(10)}
@@ -601,7 +642,7 @@ export default function QuizEditor({
                 darkMode ? 'bg-neutral-850 hover:bg-neutral-800 text-neutral-300' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800'
               }`}
             >
-              +10 Questions
+              {getTranslation(language, 'bulkAdd10')}
             </button>
           </div>
         </div>
@@ -617,9 +658,11 @@ export default function QuizEditor({
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h4 className={`font-bold text-sm sm:text-base ${darkMode ? 'text-white' : 'text-black'}`}>A4 Full-Page 2-Column PDF</h4>
+              <h4 className={`font-bold text-sm sm:text-base ${darkMode ? 'text-white' : 'text-black'}`}>
+                {getTranslation(language, 'a4TwoColPdf')}
+              </h4>
               <p className="text-xs text-neutral-400">
-                Left & Right columns optimize space so maximum questions fit on each A4 page.
+                {getTranslation(language, 'a4TwoColDesc')}
               </p>
             </div>
           </div>
@@ -631,7 +674,7 @@ export default function QuizEditor({
             }`}
           >
             <Download className="w-4 h-4" />
-            <span>Download PDF</span>
+            <span>{getTranslation(language, 'downloadPdf')}</span>
           </button>
         </div>
       </div>

@@ -255,6 +255,7 @@ export default function App() {
             <QuizEditor
               note={activeNote}
               darkMode={darkMode}
+              language={language}
               onUpdateNote={handleUpdateNote}
               onBack={() => setViewMode('list')}
               onDeleteNote={handleDeleteNote}
@@ -264,6 +265,7 @@ export default function App() {
             <NotepadEditor
               note={activeNote}
               darkMode={darkMode}
+              language={language}
               onUpdateNote={handleUpdateNote}
               onBack={() => setViewMode('list')}
               onDeleteNote={handleDeleteNote}
@@ -276,6 +278,7 @@ export default function App() {
             searchQuery={searchQuery}
             activeNoteId={activeNoteId}
             darkMode={darkMode}
+            language={language}
             onSelectNote={(selected) => {
               setActiveNoteId(selected.id);
               setViewMode('editor');
@@ -294,6 +297,7 @@ export default function App() {
       {/* Subtle Light/Dark Footer */}
       <NotepadFooter
         darkMode={darkMode}
+        language={language}
       />
 
       {/* App Icon Modal (Preview & Download B&W Icon for Google Play / Android) */}
