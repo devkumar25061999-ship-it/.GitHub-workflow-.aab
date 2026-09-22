@@ -1,7 +1,171 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Note, QuizQuestion } from '../types';
 import { ArrowLeft, Trash2, Pin, Download, Plus, CheckCircle2, FileText, Sparkles } from 'lucide-react';
 import { downloadQuizAsPdf } from '../utils/pdfExport';
+
+interface QuizRichInputProps {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder: string;
+  darkMode: boolean;
+  className: string;
+  minHeightClass?: string;
+}
+
+function QuizRichInput({
+  value,
+  onChange,
+  placeholder,
+  darkMode,
+  className,
+  minHeightClass = 'min-h-[56px]'
+}: QuizRichInputProps) {
+  const inputRef = useRef<HTMLDivElement>(null);
+  const [isFocused, setIsFocused] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
+  // Sync initial content to contentEditable without resetting cursor positioning
+  useEffect(() => {
+    if (inputRef.current && inputRef.current.innerHTML !== value) {
+      inputRef.current.innerHTML = value || '';
+    }
+  }, [value]);
+
+  const handleInput = () => {
+    if (inputRef.current) {
+      onChange(inputRef.current.innerHTML);
+    }
+  };
+
+  const executeCommand = (command: string, argValue: string | undefined = undefined) => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+    document.execCommand(command, false, argValue);
+    handleInput();
+  };
+
+  const colors = darkMode ? [
+    { name: 'White', value: '#ffffff' },
+    { name: 'Gray', value: '#d1d5db' },
+    { name: 'Red', value: '#f87171' },
+    { name: 'Blue', value: '#60a5fa' },
+    { name: 'Green', value: '#4ade80' },
+    { name: 'Yellow', value: '#fde047' }
+  ] : [
+    { name: 'Black', value: '#000000' },
+    { name: 'Gray', value: '#4b5563' },
+    { name: 'Red', value: '#dc2626' },
+    { name: 'Blue', value: '#2563eb' },
+    { name: 'Green', value: '#16a34a' },
+    { name: 'Orange', value: '#ea580c' }
+  ];
+
+  return (
+    <div className={`relative group w-full flex flex-col border rounded-xl overflow-hidden transition ${
+      isFocused 
+        ? (darkMode ? 'border-neutral-500 ring-1 ring-neutral-500 bg-neutral-800' : 'border-neutral-900 ring-1 ring-neutral-900 bg-white')
+        : (darkMode ? 'bg-neutral-800/80 border-neutral-700' : 'bg-neutral-50 border-neutral-200')
+    }`}>
+      {/* Inline/Static formatting toolbar (Bold, Italic, Text Color) positioned safely as a header */}
+      {isFocused && (
+        <div 
+          className={`flex items-center space-x-1.5 px-2.5 py-1.5 border-b select-none ${
+            darkMode ? 'bg-neutral-850 border-neutral-700' : 'bg-neutral-100 border-neutral-200'
+          }`}
+          onMouseDown={(e) => e.preventDefault()} // Prevent losing focus from input
+        >
+          {/* Bold Button */}
+          <button
+            type="button"
+            onClick={() => executeCommand('bold')}
+            className={`w-7 h-7 flex items-center justify-center rounded-lg font-black hover:bg-neutral-200 dark:hover:bg-neutral-700 text-xs cursor-pointer ${
+              darkMode ? 'text-white' : 'text-neutral-800'
+            }`}
+            title="Bold"
+          >
+            B
+          </button>
+
+          {/* Italic Button */}
+          <button
+            type="button"
+            onClick={() => executeCommand('italic')}
+            className={`w-7 h-7 flex items-center justify-center rounded-lg italic hover:bg-neutral-200 dark:hover:bg-neutral-700 text-xs cursor-pointer ${
+              darkMode ? 'text-white' : 'text-neutral-800'
+            }`}
+            title="Italic"
+          >
+            I
+          </button>
+
+          {/* Text Color Swatches Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowColorPicker(!showColorPicker)}
+              className={`w-7 h-7 flex items-center justify-center rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 text-xs flex-col cursor-pointer ${
+                darkMode ? 'text-white' : 'text-neutral-800'
+              }`}
+              title="Text Color"
+            >
+              <span className="font-bold underline" style={{ textDecorationColor: 'red' }}>A</span>
+            </button>
+
+            {showColorPicker && (
+              <div 
+                className={`absolute left-0 top-8 z-30 flex items-center space-x-1 p-1.5 rounded-lg shadow-xl border ${
+                  darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-neutral-150'
+                }`}
+                onMouseDown={(e) => e.preventDefault()}
+              >
+                {colors.map((col) => (
+                  <button
+                    key={col.value}
+                    type="button"
+                    onClick={() => {
+                      executeCommand('foreColor', col.value);
+                      setShowColorPicker(false);
+                    }}
+                    className="w-5 h-5 rounded-full border border-neutral-300 hover:scale-110 active:scale-95 transition cursor-pointer"
+                    style={{ backgroundColor: col.value }}
+                    title={col.name}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* The rich-text editable surface */}
+      <div className="relative w-full">
+        <div
+          ref={inputRef}
+          contentEditable
+          suppressContentEditableWarning
+          onInput={handleInput}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => {
+            // Delay so that color picker option clicks register before toolbar hides
+            setTimeout(() => {
+              setIsFocused(false);
+              setShowColorPicker(false);
+            }, 150);
+          }}
+          className={`w-full outline-none transition px-3.5 py-2 text-sm sm:text-base font-semibold cursor-text bg-transparent ${minHeightClass} ${className}`}
+        />
+
+        {/* Styled Placeholder (only visible when value is empty) */}
+        {!value && !isFocused && (
+          <div className="absolute top-2 left-3.5 text-neutral-400 dark:text-neutral-500 pointer-events-none text-xs sm:text-sm font-medium">
+            {placeholder}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface QuizEditorProps {
   note: Note;
@@ -120,8 +284,18 @@ export default function QuizEditor({
     });
   };
 
-  const handleDownloadPdf = () => {
-    downloadQuizAsPdf(note.title, questions);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
+    try {
+      await downloadQuizAsPdf(note.title, questions);
+    } catch (err) {
+      console.error('[Quiz PDF Download Error]', err);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -148,13 +322,14 @@ export default function QuizEditor({
           {/* Download PDF Button */}
           <button
             onClick={handleDownloadPdf}
-            className={`min-h-[40px] px-3.5 rounded-xl font-bold text-xs sm:text-sm flex items-center space-x-1.5 shadow-md active:scale-95 transition cursor-pointer ${
+            disabled={isDownloading}
+            className={`min-h-[40px] px-3.5 rounded-xl font-bold text-xs sm:text-sm flex items-center space-x-1.5 shadow-md active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed transition cursor-pointer ${
               darkMode ? 'bg-white hover:bg-neutral-200 text-black' : 'bg-black hover:bg-neutral-800 text-white'
             }`}
-            title="Download 2-Column A4 PDF"
+            title={isDownloading ? "Generating PDF..." : "Download 2-Column A4 PDF"}
           >
-            <Download className="w-4 h-4" />
-            <span>Download PDF</span>
+            <Download className={`w-4 h-4 ${isDownloading ? 'animate-spin' : ''}`} />
+            <span>{isDownloading ? 'Downloading...' : 'Download PDF'}</span>
           </button>
 
           {/* Pin Toggle Button */}
@@ -229,16 +404,12 @@ export default function QuizEditor({
                 Q.{qIndex + 1}
               </span>
               
-              <textarea
+              <QuizRichInput
                 value={q.question}
-                onChange={(e) => handleUpdateQuestion(qIndex, { question: e.target.value })}
+                onChange={(val) => handleUpdateQuestion(qIndex, { question: val })}
                 placeholder="Enter question text..."
-                rows={2}
-                className={`flex-1 border rounded-xl px-3.5 py-2 text-sm sm:text-base font-semibold focus:outline-none transition resize-none ${
-                  darkMode 
-                    ? 'bg-neutral-800/80 border-neutral-700 text-white placeholder-neutral-500 focus:bg-neutral-800 focus:ring-1.5 focus:ring-white' 
-                    : 'bg-neutral-50 border-neutral-200 text-black placeholder-neutral-400 focus:bg-white focus:ring-1.5 focus:ring-black'
-                }`}
+                darkMode={darkMode}
+                className={darkMode ? 'text-white' : 'text-black'}
               />
 
               <button
@@ -384,16 +555,13 @@ export default function QuizEditor({
               <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
                 Explanation
               </span>
-              <textarea
+              <QuizRichInput
                 value={q.explanation}
-                onChange={(e) => handleUpdateQuestion(qIndex, { explanation: e.target.value })}
+                onChange={(val) => handleUpdateQuestion(qIndex, { explanation: val })}
                 placeholder="Write explanation here (optional)..."
-                rows={2}
-                className={`w-full border rounded-xl px-3.5 py-2 text-xs sm:text-sm focus:outline-none transition resize-none ${
-                  darkMode 
-                    ? 'bg-neutral-800/80 border-neutral-700 text-neutral-200 placeholder-neutral-500 focus:bg-neutral-800 focus:ring-1.5 focus:ring-white' 
-                    : 'bg-neutral-50 border-neutral-200 text-neutral-800 placeholder-neutral-400 focus:bg-white focus:ring-1.5 focus:ring-black'
-                }`}
+                darkMode={darkMode}
+                className={darkMode ? 'text-neutral-200' : 'text-neutral-800'}
+                minHeightClass="min-h-[48px]"
               />
             </div>
           </div>

@@ -72,6 +72,19 @@ export default function NotepadEditor({
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showHighlightPicker, setShowHighlightPicker] = useState(false);
   const [showSizePicker, setShowSizePicker] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
+    try {
+      await downloadNoteAsPdf(note.title, note.content, note.updatedAt);
+    } catch (err) {
+      console.error('[PDF Download Error]', err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   // Sync initial content to contentEditable
   useEffect(() => {
@@ -156,17 +169,18 @@ export default function NotepadEditor({
         <div className="flex items-center space-x-1.5 sm:space-x-2">
           {/* Download PDF Button */}
           <button
-            onClick={() => downloadNoteAsPdf(note.title, note.content, note.updatedAt)}
-            className={`min-h-[38px] px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center space-x-1.5 transition cursor-pointer shadow-xs active:scale-95 ${
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className={`min-h-[38px] px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center space-x-1.5 transition cursor-pointer shadow-xs active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed ${
               darkMode 
                 ? 'bg-neutral-800 hover:bg-neutral-750 text-white border border-neutral-700' 
                 : 'bg-black hover:bg-neutral-800 text-white'
             }`}
-            title="Download Note as PDF"
+            title={isDownloading ? "Generating PDF..." : "Download Note as PDF"}
             aria-label="Download Note as PDF"
           >
-            <Download className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline sm:inline">PDF</span>
+            <Download className={`w-3.5 h-3.5 ${isDownloading ? 'animate-spin' : ''}`} />
+            <span className="hidden xs:inline sm:inline">{isDownloading ? 'Downloading...' : 'PDF'}</span>
           </button>
 
           {/* Pin Toggle Button */}
